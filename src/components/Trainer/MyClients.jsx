@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
 import { getAllItems, addItem, queryByIndex, STORES } from '../../db/indexedDB'
+import VideoCall from '../VideoCall/VideoCall'
 
 const MyClients = () => {
   const { user } = useAuth()
@@ -10,6 +11,8 @@ const MyClients = () => {
   const [showModal, setShowModal] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState('')
   const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' })
+  const [videoCall, setVideoCall] = useState({ show: false, clientId: null, clientName: '', roomId: '' })
+
 
   useEffect(() => {
     loadClients()
@@ -71,6 +74,17 @@ const MyClients = () => {
     }
   }
 
+  const handleVideoCall = (client) => {
+    // Create a unique room ID based on trainer and client IDs
+    const roomId = `call-${user.id}-${client.id}`
+    setVideoCall({
+      show: true,
+      clientId: client.id,
+      clientName: client.name,
+      roomId: roomId
+    })
+  }
+
   return (
     <div>
       <Card>
@@ -91,12 +105,13 @@ const MyClients = () => {
                 <th>Age</th>
                 <th>Weight (kg)</th>
                 <th>Height (cm)</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {clients.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center">No clients assigned</td>
+                  <td colSpan="7" className="text-center">No clients assigned</td>
                 </tr>
               ) : (
                 clients.map(client => (
@@ -107,6 +122,15 @@ const MyClients = () => {
                     <td>{client.age || '-'}</td>
                     <td>{client.weight || '-'}</td>
                     <td>{client.height || '-'}</td>
+                    <td>
+                      <Button 
+                        variant="success" 
+                        size="sm" 
+                        onClick={() => handleVideoCall(client)}
+                      >
+                        <i className="bi bi-camera-video"></i> Video Call
+                      </Button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -115,6 +139,16 @@ const MyClients = () => {
         </Card.Body>
       </Card>
 
+      {/* Video Call Modal */}
+      <VideoCall
+        show={videoCall.show}
+        onClose={() => setVideoCall({ show: false, clientId: null, clientName: '', roomId: '' })}
+        roomId={videoCall.roomId}
+        isInitiator={true}
+        userName={user?.name}
+        otherUserName={videoCall.clientName}
+      />
+      {/* Assign Client Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Assign Client</Modal.Title>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Row, Col, ProgressBar } from 'react-bootstrap'
+import { Card, Row, Col, ProgressBar, Button } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
 import { getAllItems, queryByIndex, STORES } from '../../db/indexedDB'
+import VideoCall from '../VideoCall/VideoCall'
 
 const UserHome = () => {
   const { user } = useAuth()
@@ -12,10 +13,36 @@ const UserHome = () => {
     hasDiet: false,
     progressEntries: 0
   })
+  const [trainer, setTrainer] = useState(null)
+  const [videoCall, setVideoCall] = useState({ show: false, roomId: '', trainerName: '' })
 
   useEffect(() => {
     loadStats()
+    loadTrainer()
   }, [])
+
+  const loadTrainer = async () => {
+    try {
+      const assignments = await queryByIndex(STORES.TRAINER_ASSIGNMENTS, 'userId', user.id)
+      if (assignments.length > 0) {
+        const trainers = await getAllItems(STORES.USERS)
+        const trainerData = trainers.find(t => t.id === assignments[0].trainerId && t.role === 'trainer')
+        setTrainer(trainerData)
+      }
+    } catch (error) {
+      console.error('Error loading trainer:', error)
+    }
+  }
+
+  const handleVideoCall = () => {
+    if (!trainer) return
+    const roomId = `call-${trainer.id}-${user.id}`
+    setVideoCall({
+      show: true,
+      roomId: roomId,
+      trainerName: trainer.name
+    })
+  }
 
   const loadStats = async () => {
     try {
@@ -112,6 +139,29 @@ const UserHome = () => {
             </Card.Body>
           </Card>
         </Col>
+        <Col md={6}>
+          <Card>
+            <Card.Header>
+              <h5 className="mb-0">Personal Trainer</h5>
+            </Card.Header>
+            <Card.Body>
+              {stats.hasTrainer && trainer ? (
+                <div>
+                  <p className="text-success"><i className="bi bi-check-circle"></i> Assigned to {trainer.name}</p>
+                  <Button 
+                    variant="primary" 
+                    className="mt-2"
+                    onClick={handleVideoCall}
+                  >
+                    <i className="bi bi-camera-video"></i> Call Trainer
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-muted">No trainer assigned yet</p>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
       </Row>
       <Row className="mt-4">
         <Col>
@@ -126,6 +176,15 @@ const UserHome = () => {
           </Card>
         </Col>
       </Row>
+      {/* Video Call Modal */}
+      <VideoCall
+        show={videoCall.show}
+        onClose={() => setVideoCall({ show: false, roomId: '', trainerName: '' })}
+        roomId={videoCall.roomId}
+        isInitiator={true}
+        userName={user?.name}
+        otherUserName={videoCall.trainerName}
+      />
     </div>
   )
 }

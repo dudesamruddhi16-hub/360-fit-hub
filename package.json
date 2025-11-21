@@ -4,12 +4,14 @@
   "description": "Gym Management System with React, Bootstrap, and IndexedDB",
   "private": true,
   "dependencies": {
+    "bootstrap": "^5.3.2",
+    "bootstrap-icons": "^1.11.2",
     "react": "^18.2.0",
+    "react-bootstrap": "^2.9.1",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
-    "bootstrap": "^5.3.2",
-    "react-bootstrap": "^2.9.1",
-    "bootstrap-icons": "^1.11.2"
+    "simple-peer": "^9.11.1",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -23,6 +25,3 @@
     "preview": "vite preview"
   }
 }
-
-
-

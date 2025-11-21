@@ -1,0 +1,8 @@
+.video-call-container {
+    position: relative;
+    width: 100%;
+  }
+  
+  .video-call-container video {
+    background-color: #000;
+  }
