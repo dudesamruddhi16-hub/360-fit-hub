@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Row, Col, ProgressBar, Button } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { getAllItems, queryByIndex, STORES } from '../../db/indexedDB'
+import { membershipsService, trainerAssignmentsService, workoutPlansService, dietPlansService, progressService, usersService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 import VideoCall from '../VideoCall/VideoCall'
 
 const UserHome = () => {
@@ -17,16 +18,20 @@ const UserHome = () => {
   const [videoCall, setVideoCall] = useState({ show: false, roomId: '', trainerName: '' })
 
   useEffect(() => {
-    loadStats()
-    loadTrainer()
-  }, [])
+    if (user?.id) {
+      loadStats()
+      loadTrainer()
+    }
+  }, [user])
 
   const loadTrainer = async () => {
     try {
-      const assignments = await queryByIndex(STORES.TRAINER_ASSIGNMENTS, 'userId', user.id)
-      if (assignments.length > 0) {
-        const trainers = await getAllItems(STORES.USERS)
-        const trainerData = trainers.find(t => t.id === assignments[0].trainerId && t.role === 'trainer')
+      const assignments = await trainerAssignmentsService.query('userId', user.id)
+      const normalizedAssignments = normalizeItem(assignments)
+      if (normalizedAssignments.length > 0) {
+        const trainers = await usersService.getAll()
+        const normalizedTrainers = normalizeItem(trainers)
+        const trainerData = normalizedTrainers.find(t => t.id === normalizedAssignments[0].trainerId && t.role === 'trainer')
         setTrainer(trainerData)
       }
     } catch (error) {
@@ -46,18 +51,19 @@ const UserHome = () => {
 
   const loadStats = async () => {
     try {
-      const memberships = await queryByIndex(STORES.MEMBERSHIPS, 'userId', user.id)
+      const memberships = await membershipsService.query('userId', user.id)
+      const normalizedMemberships = normalizeItem(memberships)
       // Only check for active memberships (status: 'active' and not expired)
-      const activeMembership = memberships.find(m => {
+      const activeMembership = normalizedMemberships.find(m => {
         if (m.status !== 'active') return false
         if (!m.endDate) return false
         return new Date(m.endDate) > new Date()
       })
 
-      const assignments = await queryByIndex(STORES.TRAINER_ASSIGNMENTS, 'userId', user.id)
-      const workouts = await queryByIndex(STORES.WORKOUT_PLANS, 'userId', user.id)
-      const diets = await queryByIndex(STORES.DIET_PLANS, 'userId', user.id)
-      const progress = await queryByIndex(STORES.PROGRESS, 'userId', user.id)
+      const assignments = await trainerAssignmentsService.query('userId', user.id)
+      const workouts = await workoutPlansService.query('userId', user.id)
+      const diets = await dietPlansService.query('userId', user.id)
+      const progress = await progressService.query('userId', user.id)
 
       setStats({
         hasMembership: !!activeMembership,

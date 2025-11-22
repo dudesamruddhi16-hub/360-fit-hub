@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Badge } from 'react-bootstrap'
-import { getAllItems, STORES } from '../../db/indexedDB'
+import { paymentsService, usersService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const PaymentsManagement = () => {
   const [payments, setPayments] = useState([])
@@ -12,17 +13,19 @@ const PaymentsManagement = () => {
 
   const loadData = async () => {
     try {
-      const allPayments = await getAllItems(STORES.PAYMENTS)
-      const allUsers = await getAllItems(STORES.USERS)
-      setPayments(allPayments.sort((a, b) => new Date(b.date) - new Date(a.date)))
-      setUsers(allUsers)
+      const allPayments = await paymentsService.getAll()
+      const normalizedPayments = normalizeItem(allPayments)
+      const allUsers = await usersService.getAll()
+      const normalizedUsers = normalizeItem(allUsers)
+      setPayments(normalizedPayments.sort((a, b) => new Date(b.date) - new Date(a.date)))
+      setUsers(normalizedUsers)
     } catch (error) {
       console.error('Error loading payments:', error)
     }
   }
 
   const getUserName = (userId) => {
-    const user = users.find(u => u.id === userId)
+    const user = users.find(u => u.id === userId || u._id === userId)
     return user ? user.name : 'Unknown'
   }
 

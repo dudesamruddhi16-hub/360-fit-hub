@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert, Badge } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { getAllItems, addItem, updateItem, deleteItem, queryByIndex, STORES } from '../../db/indexedDB'
+import { workoutPlansService, trainerAssignmentsService, usersService, exercisesService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const WorkoutPlans = () => {
   const { user } = useAuth()
@@ -24,17 +25,19 @@ const WorkoutPlans = () => {
 
   const loadData = async () => {
     try {
-      const allWorkouts = await queryByIndex(STORES.WORKOUT_PLANS, 'trainerId', user.id)
-      setWorkouts(allWorkouts)
+      const allWorkouts = await workoutPlansService.query('trainerId', user.id)
+      setWorkouts(normalizeItem(allWorkouts))
 
-      const assignments = await queryByIndex(STORES.TRAINER_ASSIGNMENTS, 'trainerId', user.id)
-      const allUsers = await getAllItems(STORES.USERS)
-      const clientIds = assignments.map(a => a.userId)
-      const clientUsers = allUsers.filter(u => clientIds.includes(u.id))
+      const assignments = await trainerAssignmentsService.query('trainerId', user.id)
+      const normalizedAssignments = normalizeItem(assignments)
+      const allUsers = await usersService.getAll()
+      const normalizedUsers = normalizeItem(allUsers)
+      const clientIds = normalizedAssignments.map(a => a.userId)
+      const clientUsers = normalizedUsers.filter(u => clientIds.includes(u.id) || clientIds.includes(u._id))
       setClients(clientUsers)
 
-      const allExercises = await getAllItems(STORES.EXERCISES)
-      setExercises(allExercises)
+      const allExercises = await exercisesService.getAll()
+      setExercises(normalizeItem(allExercises))
     } catch (error) {
       console.error('Error loading data:', error)
     }
@@ -64,26 +67,43 @@ const WorkoutPlans = () => {
 
   const handleSave = async () => {
     try {
+      // basic validation
+      if (!formData.userId) {
+        showAlert('Please select a client', 'danger')
+        return
+      }
+      if (!formData.name) {
+        showAlert('Please enter a plan name', 'danger')
+        return
+      }
+
+      // build payload using string IDs (do NOT parseInt) and ensure numeric fields are numbers
       const workoutData = {
-        userId: parseInt(formData.userId),
-        trainerId: user.id,
+        userId: formData.userId,                  // keep as string (ObjectId)
+        trainerId: user.id,                       // trainer id is string
         name: formData.name,
         description: formData.description,
-        exercises: formData.exercises,
-        createdAt: editingWorkout ? editingWorkout.createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        exercises: (formData.exercises || []).map(ex => ({
+          exerciseId: ex.exerciseId,                         // string id
+          sets: ex.sets ? Number(ex.sets) : undefined,
+          reps: ex.reps ? Number(ex.reps) : undefined,
+          duration: ex.duration ? Number(ex.duration) : undefined
+        }))
       }
 
       if (editingWorkout) {
-        await updateItem(STORES.WORKOUT_PLANS, { ...editingWorkout, ...workoutData })
+        const workoutId = editingWorkout.id || editingWorkout._id
+        await workoutPlansService.update(workoutId, workoutData)
         showAlert('Workout plan updated successfully')
       } else {
-        await addItem(STORES.WORKOUT_PLANS, workoutData)
+        await workoutPlansService.create(workoutData)
         showAlert('Workout plan created successfully')
       }
+
       setShowModal(false)
       loadData()
     } catch (error) {
+      console.error('Error saving workout plan:', error)
       showAlert('Error saving workout plan', 'danger')
     }
   }
@@ -91,7 +111,7 @@ const WorkoutPlans = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this workout plan?')) {
       try {
-        await deleteItem(STORES.WORKOUT_PLANS, id)
+        await workoutPlansService.delete(id)
         showAlert('Workout plan deleted successfully')
         loadData()
       } catch (error) {
@@ -119,12 +139,12 @@ const WorkoutPlans = () => {
   }
 
   const getClientName = (userId) => {
-    const client = clients.find(c => c.id === userId)
+    const client = clients.find(c => c.id === userId || c._id === userId)
     return client ? client.name : 'Unknown'
   }
 
   const getExerciseName = (exerciseId) => {
-    const exercise = exercises.find(e => e.id === exerciseId)
+    const exercise = exercises.find(e => e.id === exerciseId || e._id === exerciseId)
     return exercise ? exercise.name : 'Unknown'
   }
 

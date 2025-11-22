@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert, Badge } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { getAllItems, addItem, updateItem, queryByIndex, STORES } from '../../db/indexedDB'
+import { paymentsService, membershipsService, membershipPlansService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const Payment = () => {
   const { user } = useAuth()
@@ -29,16 +30,57 @@ const Payment = () => {
 
   const loadData = async () => {
     try {
-      const userPayments = await queryByIndex(STORES.PAYMENTS, 'userId', user.id)
-      setPayments(userPayments.sort((a, b) => new Date(b.date) - new Date(a.date)))
+      const userId = user?.id || user?._id
+      if (!userId) return
 
-      const memberships = await queryByIndex(STORES.MEMBERSHIPS, 'userId', user.id)
+      const userPayments = await paymentsService.query('userId', userId)
+      const normalizedPayments = normalizeItem(userPayments)
+      setPayments(normalizedPayments.sort((a, b) => new Date(b.date) - new Date(a.date)))
+
+      const memberships = await membershipsService.query('userId', userId)
+      const normalizedMemberships = normalizeItem(memberships)
+      
+      // Get all plans to fetch price if missing from membership
+      const allPlans = await membershipPlansService.getAll()
+      const normalizedPlans = normalizeItem(allPlans)
+      
       // Get memberships that are pending payment (status: 'pending' and no payment record)
-      const pending = memberships.filter(m => {
-        if (m.status !== 'pending') return false
-        // Check if payment exists for this membership
-        return !userPayments.some(p => p.membershipId === m.id)
-      })
+      const pending = normalizedMemberships
+        .filter(m => {
+          if (m.status !== 'pending') return false
+          // Check if payment exists for this membership
+          return !normalizedPayments.some(p => {
+            const pMembershipId = p.membershipId || p.membershipId
+            const mId = m.id || m._id
+            return String(pMembershipId) === String(mId)
+          })
+        })
+        .map(m => {
+          // If price is missing, fetch it from the plan
+          if (!m.price && m.planId) {
+            const plan = normalizedPlans.find(p => {
+              const planId = p.id || p._id
+              const membershipPlanId = m.planId
+              return String(planId) === String(membershipPlanId)
+            })
+            if (plan) {
+              m.price = plan.price
+            }
+          }
+          // If planName is missing, fetch it from the plan
+          if (!m.planName && m.planId) {
+            const plan = normalizedPlans.find(p => {
+              const planId = p.id || p._id
+              const membershipPlanId = m.planId
+              return String(planId) === String(membershipPlanId)
+            })
+            if (plan) {
+              m.planName = plan.name
+            }
+          }
+          return m
+        })
+      
       setPendingMemberships(pending)
     } catch (error) {
       console.error('Error loading data:', error)
@@ -113,9 +155,9 @@ const Payment = () => {
       }[paymentMethod] || 'Online'
 
       // Create payment record
-      await addItem(STORES.PAYMENTS, {
+      await paymentsService.create({
         userId: user.id,
-        membershipId: selectedMembership.id,
+        membershipId: selectedMembership.id || selectedMembership._id,
         amount: selectedMembership.price,
         planName: selectedMembership.planName,
         date: new Date().toISOString(),
@@ -129,13 +171,15 @@ const Payment = () => {
       const startDate = new Date()
       const endDate = new Date()
       // Get plan duration from membership plan
-      const allPlans = await getAllItems('membershipPlans')
-      const plan = allPlans.find(p => p.id === selectedMembership.planId)
+      const allPlans = await membershipPlansService.getAll()
+      const normalizedPlans = normalizeItem(allPlans)
+      const plan = normalizedPlans.find(p => p.id === selectedMembership.planId || p._id === selectedMembership.planId)
       const duration = plan ? plan.duration : 30 // Default 30 days
       endDate.setDate(endDate.getDate() + duration)
 
       // Update membership to active status
-      await updateItem(STORES.MEMBERSHIPS, {
+      const membershipId = selectedMembership.id || selectedMembership._id
+      await membershipsService.update(membershipId, {
         ...selectedMembership,
         status: 'active',
         startDate: startDate.toISOString(),
@@ -195,7 +239,11 @@ const Payment = () => {
                       <strong>{membership.planName}</strong>
                       <Badge bg="warning" className="ms-2">Pending Payment</Badge>
                     </td>
-                    <td>${membership.price?.toFixed(2) || '0.00'}</td>
+                    <td>
+                      {membership.price !== undefined && membership.price !== null 
+                        ? `₹${Number(membership.price).toFixed(2)}` 
+                        : '₹0.00'}
+                    </td>
                     <td>
                       {membership.startDate ? new Date(membership.startDate).toLocaleDateString() : 'After Payment'}
                     </td>
@@ -241,7 +289,11 @@ const Payment = () => {
                   <tr key={payment.id}>
                     <td>#{payment.transactionId || payment.id}</td>
                     <td>{payment.planName || '-'}</td>
-                    <td>${payment.amount?.toFixed(2) || '0.00'}</td>
+                    <td>
+                      {payment.amount !== undefined && payment.amount !== null 
+                        ? `₹${Number(payment.amount).toFixed(2)}` 
+                        : '₹0.00'}
+                    </td>
                     <td>{new Date(payment.date).toLocaleDateString()}</td>
                     <td>{getStatusBadge(payment.status || 'completed')}</td>
                     <td>{payment.method || 'Online'}</td>
@@ -284,7 +336,11 @@ const Payment = () => {
                     <small className="text-muted">Membership Plan</small>
                   </div>
                   <div className="text-end">
-                    <h5 className="mb-0 text-primary">${selectedMembership.price?.toFixed(2) || '0.00'}</h5>
+                    <h5 className="mb-0 text-primary">
+                      {selectedMembership.price !== undefined && selectedMembership.price !== null 
+                        ? `₹${Number(selectedMembership.price).toFixed(2)}` 
+                        : '₹0.00'}
+                    </h5>
                   </div>
                 </div>
               </div>
@@ -483,7 +539,9 @@ const Payment = () => {
                 Cancel
               </Button>
               <Button variant="primary" onClick={handlePaymentSubmit} className="payment-submit-btn">
-                Pay ${selectedMembership?.price?.toFixed(2) || '0.00'}
+                Pay {selectedMembership?.price !== undefined && selectedMembership?.price !== null 
+                  ? `$${Number(selectedMembership.price).toFixed(2)}` 
+                  : '$0.00'}
               </Button>
             </div>
           </div>
@@ -505,7 +563,7 @@ const Payment = () => {
           {transactionDetails && (
             <div className="transaction-details">
               <p className="text-muted mb-2">Transaction ID: <strong>{transactionDetails.transactionId}</strong></p>
-              <p className="text-muted mb-2">Amount: <strong>${transactionDetails.amount?.toFixed(2)}</strong></p>
+              <p className="text-muted mb-2">Amount: <strong>₹{transactionDetails.amount !== undefined && transactionDetails.amount !== null ? Number(transactionDetails.amount).toFixed(2) : '0.00'}</strong></p>
               <p className="text-muted mb-4">Plan: <strong>{transactionDetails.planName}</strong></p>
             </div>
           )}

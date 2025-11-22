@@ -16,7 +16,16 @@ const userSchema = new mongoose.Schema({
 
 const genericSchema = (schemaDef) => new mongoose.Schema({ ...schemaDef, createdAt: { type: Date, default: Date.now } })
 
-const membershipSchema = genericSchema({ userId: mongoose.Types.ObjectId, planId: mongoose.Types.ObjectId, status: String, startDate: Date, endDate: Date })
+const membershipSchema = genericSchema({ 
+  userId: mongoose.Types.ObjectId, 
+  planId: mongoose.Types.ObjectId, 
+  planName: String,
+  price: Number,
+  status: String, 
+  startDate: Date, 
+  endDate: Date,
+  activatedAt: Date
+})
 const planSchema = genericSchema({ name: String, price: Number, duration: Number, features: [String] })
 const dietSchema = genericSchema({ userId: mongoose.Types.ObjectId, trainerId: mongoose.Types.ObjectId, name: String, description: String, meals: Array })
 const workoutSchema = genericSchema({ userId: mongoose.Types.ObjectId, trainerId: mongoose.Types.ObjectId, name: String, description: String, exercises: Array })
@@ -37,28 +46,68 @@ const TrainerAssignment = mongoose.model('TrainerAssignment', assignmentSchema)
 
 // Seed initial data (similar to indexedDB seed)
 const seedInitialData = async () => {
-  const usersCount = await User.countDocuments()
-  if (usersCount > 0) return
+  try {
+    const usersCount = await User.countDocuments()
+    if (usersCount > 0) return
 
-  const admin = await User.create({ email: 'admin@gym.com', password: 'admin123', name: 'Admin User', role: 'admin', phone: '1234567890' })
-  const trainer = await User.create({ email: 'trainer@gym.com', password: 'trainer123', name: 'John Trainer', role: 'trainer', phone: '1234567891', specialization: 'Weight Training', experience: '5 years' })
-  const user = await User.create({ email: 'user@gym.com', password: 'user123', name: 'Test User', role: 'user', phone: '1234567892', age: 25, weight: 70, height: 175 })
+    // Create users
+    const admin = await User.create({ email: 'admin@gym.com', password: 'admin123', name: 'Admin User', role: 'admin', phone: '1234567890' })
+    const trainer = await User.create({ email: 'trainer@gym.com', password: 'trainer123', name: 'John Trainer', role: 'trainer', phone: '1234567891', specialization: 'Weight Training', experience: '5 years' })
+    const user = await User.create({ email: 'user@gym.com', password: 'user123', name: 'Test User', role: 'user', phone: '1234567892', age: 25, weight: 70, height: 175 })
 
-  const plans = [
-    { name: 'Basic Plan', price: 29.99, duration: 30, features: ['Gym Access', 'Basic Equipment'] },
-    { name: 'Premium Plan', price: 49.99, duration: 30, features: ['Gym Access', 'All Equipment', 'Group Classes'] },
-    { name: 'VIP Plan', price: 79.99, duration: 30, features: ['Gym Access', 'All Equipment', 'Group Classes', 'Personal Trainer', 'Nutrition Plan'] }
-  ]
-  await MembershipPlan.insertMany(plans)
+    // Membership plans
+    const plans = await MembershipPlan.insertMany([
+      { name: 'Basic Plan', price: 29.99, duration: 30, features: ['Gym Access', 'Basic Equipment'] },
+      { name: 'Premium Plan', price: 49.99, duration: 30, features: ['Gym Access', 'All Equipment', 'Group Classes'] },
+      { name: 'VIP Plan', price: 79.99, duration: 30, features: ['Gym Access', 'All Equipment', 'Group Classes', 'Personal Trainer', 'Nutrition Plan'] }
+    ])
 
-  const exercises = [
-    { name: 'Bench Press', category: 'Chest', description: 'Upper body strength exercise', sets: 3, reps: 10 },
-    { name: 'Squats', category: 'Legs', description: 'Lower body strength exercise', sets: 3, reps: 12 },
-    { name: 'Deadlift', category: 'Back', description: 'Full body strength exercise', sets: 3, reps: 8 },
-    { name: 'Pull-ups', category: 'Back', description: 'Upper body pulling exercise', sets: 3, reps: 10 },
-    { name: 'Running', category: 'Cardio', description: 'Cardiovascular exercise', duration: 30 }
-  ]
-  await Exercise.insertMany(exercises)
+    // Exercises
+    await Exercise.insertMany([
+      { name: 'Bench Press', category: 'Chest', description: 'Upper body strength exercise', sets: 3, reps: 10 },
+      { name: 'Squats', category: 'Legs', description: 'Lower body strength exercise', sets: 3, reps: 12 },
+      { name: 'Deadlift', category: 'Back', description: 'Full body strength exercise', sets: 3, reps: 8 },
+      { name: 'Pull-ups', category: 'Back', description: 'Upper body pulling exercise', sets: 3, reps: 10 },
+      { name: 'Running', category: 'Cardio', description: 'Cardiovascular exercise', duration: 30 }
+    ])
+
+    // Example membership for test user (link to first plan)
+    if (plans && plans.length) {
+      await Membership.create({
+        userId: user._id,
+        planId: plans[0]._id,
+        status: 'active',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) // +30 days
+      })
+    }
+
+    // Example trainer assignment
+    await TrainerAssignment.create({ userId: user._id, trainerId: trainer._id })
+
+    console.log('SeedInitialData: inserted users, plans, exercises, membership, assignment')
+  } catch (err) {
+    // ignore duplicate key errors during re-seed attempt
+    if (err.code === 11000) {
+      console.warn('Seed skipped duplicate keys:', err.keyValue)
+      return
+    }
+    console.error('Error in seedInitialData:', err)
+    throw err
+  }
 }
 
-module.exports = { models: { User, Membership, MembershipPlan, DietPlan, WorkoutPlan, Exercise, Progress, Payment, TrainerAssignment }, seedInitialData }
+module.exports = {
+  models: {
+    User,
+    Membership,
+    MembershipPlan,
+    DietPlan,
+    WorkoutPlan,
+    Exercise,
+    Progress,
+    Payment,
+    TrainerAssignment
+  },
+  seedInitialData
+}

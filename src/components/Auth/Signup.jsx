@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Card, Form, Button, Alert } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { initDB, seedDatabase } from '../../db/indexedDB'
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -20,19 +19,6 @@ const Signup = () => {
   const [loading, setLoading] = useState(false)
   const { signup, user } = useAuth()
   const navigate = useNavigate()
-
-  useEffect(() => {
-    // Initialize database on component mount
-    const initializeDB = async () => {
-      try {
-        await initDB()
-        await seedDatabase()
-      } catch (error) {
-        console.error('Error initializing database:', error)
-      }
-    }
-    initializeDB()
-  }, [])
 
   useEffect(() => {
     if (user) {

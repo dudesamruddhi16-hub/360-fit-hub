@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { getAllItems, addItem, queryByIndex, STORES } from '../../db/indexedDB'
+import { usersService, trainerAssignmentsService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 import VideoCall from '../VideoCall/VideoCall'
 
 const MyClients = () => {
@@ -21,10 +22,12 @@ const MyClients = () => {
 
   const loadClients = async () => {
     try {
-      const assignments = await queryByIndex(STORES.TRAINER_ASSIGNMENTS, 'trainerId', user.id)
-      const users = await getAllItems(STORES.USERS)
-      const clientIds = assignments.map(a => a.userId)
-      const clientUsers = users.filter(u => clientIds.includes(u.id))
+      const assignments = await trainerAssignmentsService.query('trainerId', user.id)
+      const normalizedAssignments = normalizeItem(assignments)
+      const users = await usersService.getAll()
+      const normalizedUsers = normalizeItem(users)
+      const clientIds = normalizedAssignments.map(a => a.userId)
+      const clientUsers = normalizedUsers.filter(u => clientIds.includes(u.id) || clientIds.includes(u._id))
       setClients(clientUsers)
     } catch (error) {
       console.error('Error loading clients:', error)
@@ -33,8 +36,9 @@ const MyClients = () => {
 
   const loadAllUsers = async () => {
     try {
-      const users = await getAllItems(STORES.USERS)
-      const userMembers = users.filter(u => u.role === 'user')
+      const users = await usersService.getAll()
+      const normalizedUsers = normalizeItem(users)
+      const userMembers = normalizedUsers.filter(u => u.role === 'user')
       setAllUsers(userMembers)
     } catch (error) {
       console.error('Error loading users:', error)
@@ -54,17 +58,21 @@ const MyClients = () => {
 
     try {
       // Check if already assigned
-      const existing = await queryByIndex(STORES.TRAINER_ASSIGNMENTS, 'trainerId', user.id)
-      if (existing.some(a => a.userId === parseInt(selectedUserId))) {
+      const existing = await trainerAssignmentsService.query('trainerId', user.id)
+      const normalized = normalizeItem(existing)
+      // Compare IDs as strings (assignment.userId may be ObjectId/string)
+      if (normalized.some(a => String(a.userId) === String(selectedUserId))) {
         showAlert('User is already assigned to you', 'warning')
         return
       }
 
-      await addItem(STORES.TRAINER_ASSIGNMENTS, {
+      // Send ID strings (do NOT parseInt) so Mongoose can cast to ObjectId
+      await trainerAssignmentsService.create({
         trainerId: user.id,
-        userId: parseInt(selectedUserId),
+        userId: selectedUserId,
         assignedDate: new Date().toISOString()
       })
+
       showAlert('Client assigned successfully')
       setShowModal(false)
       setSelectedUserId('')

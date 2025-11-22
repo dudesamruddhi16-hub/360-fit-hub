@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { getAllItems, addItem, updateItem, deleteItem, queryByIndex, STORES } from '../../db/indexedDB'
+import { dietPlansService, trainerAssignmentsService, usersService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const DietPlans = () => {
   const { user } = useAuth()
@@ -23,13 +24,15 @@ const DietPlans = () => {
 
   const loadData = async () => {
     try {
-      const allDiets = await queryByIndex(STORES.DIET_PLANS, 'trainerId', user.id)
-      setDiets(allDiets)
+      const allDiets = await dietPlansService.query('trainerId', user.id)
+      setDiets(normalizeItem(allDiets))
 
-      const assignments = await queryByIndex(STORES.TRAINER_ASSIGNMENTS, 'trainerId', user.id)
-      const allUsers = await getAllItems(STORES.USERS)
-      const clientIds = assignments.map(a => a.userId)
-      const clientUsers = allUsers.filter(u => clientIds.includes(u.id))
+      const assignments = await trainerAssignmentsService.query('trainerId', user.id)
+      const normalizedAssignments = normalizeItem(assignments)
+      const allUsers = await usersService.getAll()
+      const normalizedUsers = normalizeItem(allUsers)
+      const clientIds = normalizedAssignments.map(a => a.userId)
+      const clientUsers = normalizedUsers.filter(u => clientIds.includes(u.id) || clientIds.includes(u._id))
       setClients(clientUsers)
     } catch (error) {
       console.error('Error loading data:', error)
@@ -71,10 +74,11 @@ const DietPlans = () => {
       }
 
       if (editingDiet) {
-        await updateItem(STORES.DIET_PLANS, { ...editingDiet, ...dietData })
+        const dietId = editingDiet.id || editingDiet._id
+        await dietPlansService.update(dietId, dietData)
         showAlert('Diet plan updated successfully')
       } else {
-        await addItem(STORES.DIET_PLANS, dietData)
+        await dietPlansService.create(dietData)
         showAlert('Diet plan created successfully')
       }
       setShowModal(false)
@@ -87,7 +91,7 @@ const DietPlans = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this diet plan?')) {
       try {
-        await deleteItem(STORES.DIET_PLANS, id)
+        await dietPlansService.delete(id)
         showAlert('Diet plan deleted successfully')
         loadData()
       } catch (error) {
@@ -115,7 +119,7 @@ const DietPlans = () => {
   }
 
   const getClientName = (userId) => {
-    const client = clients.find(c => c.id === userId)
+    const client = clients.find(c => c.id === userId || c._id === userId)
     return client ? client.name : 'Unknown'
   }
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Alert, Badge } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { queryByIndex, STORES } from '../../db/indexedDB'
+import { dietPlansService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const MyDiet = () => {
   const { user } = useAuth()
@@ -13,8 +14,8 @@ const MyDiet = () => {
 
   const loadData = async () => {
     try {
-      const userDiets = await queryByIndex(STORES.DIET_PLANS, 'userId', user.id)
-      setDiets(userDiets)
+      const userDiets = await dietPlansService.query('userId', user.id)
+      setDiets(normalizeItem(userDiets))
     } catch (error) {
       console.error('Error loading diets:', error)
     }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Badge, Alert } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { getAllItems, queryByIndex, STORES } from '../../db/indexedDB'
+import { workoutPlansService, exercisesService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const MyWorkouts = () => {
   const { user } = useAuth()
@@ -14,11 +15,11 @@ const MyWorkouts = () => {
 
   const loadData = async () => {
     try {
-      const userWorkouts = await queryByIndex(STORES.WORKOUT_PLANS, 'userId', user.id)
-      setWorkouts(userWorkouts)
+      const userWorkouts = await workoutPlansService.query('userId', user.id)
+      setWorkouts(normalizeItem(userWorkouts))
 
-      const allExercises = await getAllItems(STORES.EXERCISES)
-      setExercises(allExercises)
+      const allExercises = await exercisesService.getAll()
+      setExercises(normalizeItem(allExercises))
     } catch (error) {
       console.error('Error loading workouts:', error)
     }

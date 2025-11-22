@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap'
-import { getAllItems, addItem, updateItem, deleteItem, STORES, queryByIndex } from '../../db/indexedDB'
+import { usersService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const TrainersManagement = () => {
   const [trainers, setTrainers] = useState([])
@@ -22,8 +23,9 @@ const TrainersManagement = () => {
 
   const loadTrainers = async () => {
     try {
-      const users = await getAllItems(STORES.USERS)
-      const trainerUsers = users.filter(u => u.role === 'trainer')
+      const users = await usersService.getAll()
+      const normalizedUsers = normalizeItem(users)
+      const trainerUsers = normalizedUsers.filter(u => u.role === 'trainer')
       setTrainers(trainerUsers)
     } catch (error) {
       showAlert('Error loading trainers', 'danger')
@@ -57,19 +59,20 @@ const TrainersManagement = () => {
   const handleSave = async () => {
     try {
       if (editingTrainer) {
-        const updated = { ...editingTrainer, ...formData }
+        const trainerId = editingTrainer.id || editingTrainer._id
+        const updated = { ...formData }
         if (!formData.password) {
           delete updated.password
         }
-        await updateItem(STORES.USERS, updated)
+        await usersService.update(trainerId, updated)
         showAlert('Trainer updated successfully')
       } else {
-        const existing = await queryByIndex(STORES.USERS, 'email', formData.email)
+        const existing = await usersService.query('email', formData.email)
         if (existing.length > 0) {
           showAlert('Email already exists', 'danger')
           return
         }
-        await addItem(STORES.USERS, {
+        await usersService.create({
           ...formData,
           role: 'trainer',
           createdAt: new Date().toISOString()
@@ -86,7 +89,7 @@ const TrainersManagement = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this trainer?')) {
       try {
-        await deleteItem(STORES.USERS, id)
+        await usersService.delete(id)
         showAlert('Trainer deleted successfully')
         loadTrainers()
       } catch (error) {

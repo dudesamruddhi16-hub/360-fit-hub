@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap'
-import { getAllItems, addItem, updateItem, deleteItem, STORES, queryByIndex } from '../../db/indexedDB'
+import { usersService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const MembersManagement = () => {
   const [members, setMembers] = useState([])
@@ -23,8 +24,9 @@ const MembersManagement = () => {
 
   const loadMembers = async () => {
     try {
-      const users = await getAllItems(STORES.USERS)
-      const userMembers = users.filter(u => u.role === 'user')
+      const users = await usersService.getAll()
+      const normalizedUsers = normalizeItem(users)
+      const userMembers = normalizedUsers.filter(u => u.role === 'user')
       setMembers(userMembers)
     } catch (error) {
       showAlert('Error loading members', 'danger')
@@ -59,8 +61,8 @@ const MembersManagement = () => {
   const handleSave = async () => {
     try {
       if (editingMember) {
+        const memberId = editingMember.id || editingMember._id
         const updated = {
-          ...editingMember,
           ...formData,
           age: formData.age ? parseInt(formData.age) : undefined,
           weight: formData.weight ? parseFloat(formData.weight) : undefined,
@@ -69,16 +71,16 @@ const MembersManagement = () => {
         if (!formData.password) {
           delete updated.password
         }
-        await updateItem(STORES.USERS, updated)
+        await usersService.update(memberId, updated)
         showAlert('Member updated successfully')
       } else {
         // Check if email already exists
-        const existing = await queryByIndex(STORES.USERS, 'email', formData.email)
+        const existing = await usersService.query('email', formData.email)
         if (existing.length > 0) {
           showAlert('Email already exists', 'danger')
           return
         }
-        await addItem(STORES.USERS, {
+        await usersService.create({
           ...formData,
           role: 'user',
           age: formData.age ? parseInt(formData.age) : undefined,
@@ -98,7 +100,7 @@ const MembersManagement = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this member?')) {
       try {
-        await deleteItem(STORES.USERS, id)
+        await usersService.delete(id)
         showAlert('Member deleted successfully')
         loadMembers()
       } catch (error) {

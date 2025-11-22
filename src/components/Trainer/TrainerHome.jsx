@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Row, Col } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { getAllItems, queryByIndex, STORES } from '../../db/indexedDB'
+import { trainerAssignmentsService, workoutPlansService, dietPlansService } from '../../services'
 
 const TrainerHome = () => {
   const { user } = useAuth()
@@ -17,9 +17,9 @@ const TrainerHome = () => {
 
   const loadStats = async () => {
     try {
-      const assignments = await queryByIndex(STORES.TRAINER_ASSIGNMENTS, 'trainerId', user.id)
-      const workouts = await queryByIndex(STORES.WORKOUT_PLANS, 'trainerId', user.id)
-      const diets = await queryByIndex(STORES.DIET_PLANS, 'trainerId', user.id)
+      const assignments = await trainerAssignmentsService.query('trainerId', user.id)
+      const workouts = await workoutPlansService.query('trainerId', user.id)
+      const diets = await dietPlansService.query('trainerId', user.id)
       
       setStats({
         totalClients: assignments.length,

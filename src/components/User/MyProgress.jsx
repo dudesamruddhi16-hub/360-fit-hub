@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { getAllItems, addItem, queryByIndex, STORES } from '../../db/indexedDB'
+import { progressService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
+import MyProgressGraph from './MyProgressGraph' 
 
 const MyProgress = () => {
   const { user } = useAuth()
@@ -22,8 +24,9 @@ const MyProgress = () => {
 
   const loadProgress = async () => {
     try {
-      const userProgress = await queryByIndex(STORES.PROGRESS, 'userId', user.id)
-      setProgress(userProgress.sort((a, b) => new Date(b.date) - new Date(a.date)))
+      const userProgress = await progressService.query('userId', user.id)
+      const normalized = normalizeItem(userProgress)
+      setProgress(normalized.sort((a, b) => new Date(b.date) - new Date(a.date)))
     } catch (error) {
       console.error('Error loading progress:', error)
     }
@@ -47,7 +50,7 @@ const MyProgress = () => {
 
   const handleSave = async () => {
     try {
-      await addItem(STORES.PROGRESS, {
+      await progressService.create({
         userId: user.id,
         date: formData.date,
         weight: formData.weight ? parseFloat(formData.weight) : null,
@@ -63,6 +66,17 @@ const MyProgress = () => {
       showAlert('Error saving progress', 'danger')
     }
   }
+
+  const userId = user.id || (() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user'))
+      return u?.id || u?._id || ''
+    } catch (e) {
+      return ''
+    }
+  })()
+
+  if (!userId) return <div>Please login to view progress.</div>
 
   return (
     <div>
@@ -105,6 +119,20 @@ const MyProgress = () => {
           )}
         </Card.Body>
       </Card>
+      <Card>
+      <Card.Header>
+        <div className="d-flex justify-content-between align-items-center">
+          <h5 className="mb-0">Progress Tracking</h5>
+          <small className="text-muted">{userId ? 'Your progress overview' : 'Not signed in'}</small>
+        </div>
+      </Card.Header>
+      <Card.Body>
+        {userId
+          ? <MyProgressGraph userId={userId} />
+          : <div>Please sign in to view your progress.</div>
+        }
+      </Card.Body>
+    </Card>
 
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>

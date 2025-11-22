@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react'
-import { getAllItems, queryByIndex, addItem, STORES } from '../db/indexedDB'
+import { usersService } from '../services'
 
 const AuthContext = createContext()
 
@@ -9,6 +9,16 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
+}
+
+// Helper to convert MongoDB _id to id for frontend compatibility
+const normalizeUser = (user) => {
+  if (!user) return null
+  const { _id, password, ...rest } = user
+  return {
+    id: _id || user.id,
+    ...rest
+  }
 }
 
 export const AuthProvider = ({ children }) => {
@@ -30,23 +40,26 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const login = async (email, password) => {
+    console.log('Logged in user:', email, password);
     try {
-      const users = await queryByIndex(STORES.USERS, 'email', email)
+      const users = await usersService.query('email', email)
+        console.log('users found:', users);
       if (users.length === 0) {
         throw new Error('User not found')
       }
 
+    
       const foundUser = users[0]
       // In production, use proper password hashing (bcrypt, etc.)
       if (foundUser.password !== password) {
         throw new Error('Invalid password')
       }
-
-      // Remove password from user object before storing
-      const { password: _, ...userWithoutPassword } = foundUser
-      setUser(userWithoutPassword)
-      localStorage.setItem('gymUser', JSON.stringify(userWithoutPassword))
-      return { success: true, user: userWithoutPassword }
+      console.log('Logged in user:', users);
+      // Normalize user (convert _id to id and remove password)
+      const normalizedUser = normalizeUser(foundUser)
+      setUser(normalizedUser)
+      localStorage.setItem('gymUser', JSON.stringify(normalizedUser))
+      return { success: true, user: normalizedUser }
     } catch (error) {
       return { success: false, error: error.message }
     }
@@ -55,7 +68,7 @@ export const AuthProvider = ({ children }) => {
   const signup = async (userData) => {
     try {
       // Check if email already exists
-      const existingUsers = await queryByIndex(STORES.USERS, 'email', userData.email)
+      const existingUsers = await usersService.query('email', userData.email)
       if (existingUsers.length > 0) {
         throw new Error('Email already exists. Please use a different email.')
       }
@@ -67,21 +80,15 @@ export const AuthProvider = ({ children }) => {
         createdAt: new Date().toISOString()
       }
 
-      // Add user to database (returns the generated ID)
-      const userId = await addItem(STORES.USERS, newUser)
+      // Create user via API
+      const createdUser = await usersService.create(newUser)
 
-      // Create user object with the generated ID
-      const createdUser = {
-        id: userId,
-        ...newUser
-      }
-
-      // Remove password from user object before storing
-      const { password: _, ...userWithoutPassword } = createdUser
-      setUser(userWithoutPassword)
-      localStorage.setItem('gymUser', JSON.stringify(userWithoutPassword))
+      // Normalize user (convert _id to id and remove password)
+      const normalizedUser = normalizeUser(createdUser)
+      setUser(normalizedUser)
+      localStorage.setItem('gymUser', JSON.stringify(normalizedUser))
       
-      return { success: true, user: userWithoutPassword }
+      return { success: true, user: normalizedUser }
     } catch (error) {
       return { success: false, error: error.message }
     }

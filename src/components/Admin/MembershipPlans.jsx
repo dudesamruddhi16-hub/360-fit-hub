@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert, Badge } from 'react-bootstrap'
-import { getAllItems, addItem, updateItem, deleteItem, STORES } from '../../db/indexedDB'
+import { membershipPlansService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const MembershipPlans = () => {
   const [plans, setPlans] = useState([])
@@ -20,10 +21,9 @@ const MembershipPlans = () => {
 
   const loadPlans = async () => {
     try {
-      const allPlans = await getAllItems('membershipPlans')
-      setPlans(allPlans)
+      const allPlans = await membershipPlansService.getAll()
+      setPlans(normalizeItem(allPlans))
     } catch (error) {
-      // If store doesn't exist, create it
       setPlans([])
     }
   }
@@ -60,10 +60,11 @@ const MembershipPlans = () => {
       }
 
       if (editingPlan) {
-        await updateItem('membershipPlans', { ...editingPlan, ...planData })
+        const planId = editingPlan.id || editingPlan._id
+        await membershipPlansService.update(planId, planData)
         showAlert('Plan updated successfully')
       } else {
-        await addItem('membershipPlans', planData)
+        await membershipPlansService.create(planData)
         showAlert('Plan added successfully')
       }
       setShowModal(false)
@@ -76,7 +77,7 @@ const MembershipPlans = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this plan?')) {
       try {
-        await deleteItem('membershipPlans', id)
+        await membershipPlansService.delete(id)
         showAlert('Plan deleted successfully')
         loadPlans()
       } catch (error) {

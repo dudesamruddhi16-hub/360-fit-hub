@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Table, Button, Modal, Form, Alert, Badge } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
-import { getAllItems, addItem, queryByIndex, STORES } from '../../db/indexedDB'
+import { membershipsService, membershipPlansService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 import { useNavigate } from 'react-router-dom'
 
 const MyMembership = () => {
@@ -14,24 +15,56 @@ const MyMembership = () => {
   const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' })
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (user?.id) {
+      loadData()
+    }
+  }, [user])
 
   const loadData = async () => {
     try {
-      const memberships = await queryByIndex(STORES.MEMBERSHIPS, 'userId', user.id)
+      const userId = user?.id || user?._id
+      if (!userId) {
+        console.error('User ID not available')
+        return
+      }
+
+      const memberships = await membershipsService.query('userId', userId)
+      const normalized = normalizeItem(memberships)
+      
+      // Get all plans to fetch price if missing from membership
+      const allPlans = await membershipPlansService.getAll()
+      const normalizedPlans = normalizeItem(allPlans)
+      
       // Only show active memberships (status: 'active' and not expired)
-      const activeMembership = memberships.find(m => {
+      let activeMembership = normalized.find(m => {
         if (m.status !== 'active') return false
         if (!m.endDate) return false
         return new Date(m.endDate) > new Date()
       })
+      
+      // If no active membership, show pending membership
+      if (!activeMembership) {
+        activeMembership = normalized.find(m => m.status === 'pending')
+      }
+      
+      // If price is missing, fetch it from the plan
+      if (activeMembership && (!activeMembership.price || activeMembership.price === 0) && activeMembership.planId) {
+        const plan = normalizedPlans.find(p => {
+          const planId = p.id || p._id
+          const membershipPlanId = activeMembership.planId
+          return String(planId) === String(membershipPlanId)
+        })
+        if (plan) {
+          activeMembership.price = plan.price
+          activeMembership.planName = activeMembership.planName || plan.name
+        }
+      }
+      
       setMembership(activeMembership)
-
-      const allPlans = await getAllItems('membershipPlans')
-      setPlans(allPlans)
+      setPlans(normalizedPlans)
     } catch (error) {
       console.error('Error loading data:', error)
+      showAlert('Error loading membership data', 'danger')
     }
   }
 
@@ -47,42 +80,58 @@ const MyMembership = () => {
     }
 
     try {
-      const plan = plans.find(p => p.id === parseInt(selectedPlan))
+      // Find plan by id (can be string from MongoDB _id or number)
+      const plan = plans.find(p => {
+        const planId = p.id || p._id
+        const selectedId = selectedPlan
+        return String(planId) === String(selectedId) || planId === selectedId
+      })
+      
       if (!plan) {
         showAlert('Plan not found', 'danger')
         return
       }
 
-      const startDate = new Date()
-      const endDate = new Date()
-      endDate.setDate(endDate.getDate() + plan.duration)
+      // Get the actual plan ID (handle both _id and id)
+      const planId = plan.id || plan._id
+      const userId = user.id || user._id
+
+      if (!userId) {
+        showAlert('User ID not found. Please login again.', 'danger')
+        return
+      }
 
       // Create membership with pending status - will be activated after payment
-      const membershipId = await addItem(STORES.MEMBERSHIPS, {
-        userId: user.id,
-        planId: plan.id,
+      const membershipData = {
+        userId: userId,
+        planId: planId,
         planName: plan.name,
         price: plan.price,
         startDate: null, // Will be set after payment
         endDate: null, // Will be set after payment
         status: 'pending', // Pending until payment is completed
         createdAt: new Date().toISOString()
-      })
+      }
+
+      await membershipsService.create(membershipData)
 
       showAlert('Plan selected! Please complete payment to activate your membership.')
       setShowModal(false)
+      setSelectedPlan('')
       // Redirect to payment page
       setTimeout(() => {
         navigate('/user/payment')
       }, 1500)
       loadData()
     } catch (error) {
-      showAlert('Error subscribing to plan', 'danger')
+      console.error('Subscription error:', error)
+      const errorMessage = error.message || 'Error subscribing to plan'
+      showAlert(errorMessage, 'danger')
     }
   }
 
   const getPlanName = (planId) => {
-    const plan = plans.find(p => p.id === planId)
+    const plan = plans.find(p => p.id === planId || p._id === planId)
     return plan ? plan.name : 'Unknown'
   }
 
@@ -128,7 +177,11 @@ const MyMembership = () => {
                   </tr>
                   <tr>
                     <th>Price</th>
-                    <td>${membership.price?.toFixed(2) || '0.00'}</td>
+                    <td>
+                      {membership.price !== undefined && membership.price !== null 
+                        ? `₹${Number(membership.price).toFixed(2)}` 
+                        : '₹0.00'}
+                    </td>
                   </tr>
                 </tbody>
               </Table>
@@ -158,38 +211,45 @@ const MyMembership = () => {
         </Card.Header>
         <Card.Body>
           <div className="row">
-            {plans.map(plan => (
-              <div key={plan.id} className="col-md-4 mb-3">
-                <Card>
-                  <Card.Header className="text-center">
-                    <h5>{plan.name}</h5>
-                    <h3 className="text-primary">${plan.price}</h3>
-                    <small className="text-muted">per {plan.duration} days</small>
-                  </Card.Header>
-                  <Card.Body>
-                    <ul className="list-unstyled">
-                      {Array.isArray(plan.features) ? plan.features.map((feature, i) => (
-                        <li key={i} className="mb-2">
-                          <i className="bi bi-check-circle text-success"></i> {feature}
-                        </li>
-                      )) : <li>{plan.features}</li>}
-                    </ul>
-                    {!membership && (
-                      <Button
-                        variant="primary"
-                        className="w-100"
-                        onClick={() => {
-                          setSelectedPlan(plan.id)
-                          setShowModal(true)
-                        }}
-                      >
-                        Subscribe
-                      </Button>
-                    )}
-                  </Card.Body>
-                </Card>
-              </div>
-            ))}
+            {plans.map(plan => {
+              const planId = plan.id || plan._id
+              return (
+                <div key={planId} className="col-md-4 mb-3">
+                  <Card>
+                    <Card.Header className="text-center">
+                      <h5>{plan.name}</h5>
+                      <h3 className="text-primary">
+                        {plan.price !== undefined && plan.price !== null 
+                          ? `₹${Number(plan.price).toFixed(2)}` 
+                          : '₹0.00'}
+                      </h3>
+                      <small className="text-muted">per {plan.duration} days</small>
+                    </Card.Header>
+                    <Card.Body>
+                      <ul className="list-unstyled">
+                        {Array.isArray(plan.features) ? plan.features.map((feature, i) => (
+                          <li key={i} className="mb-2">
+                            <i className="bi bi-check-circle text-success"></i> {feature}
+                          </li>
+                        )) : <li>{plan.features}</li>}
+                      </ul>
+                      {!membership && (
+                        <Button
+                          variant="primary"
+                          className="w-100"
+                          onClick={() => {
+                            setSelectedPlan(planId)
+                            setShowModal(true)
+                          }}
+                        >
+                          Subscribe
+                        </Button>
+                      )}
+                    </Card.Body>
+                  </Card>
+                </div>
+              )
+            })}
           </div>
         </Card.Body>
       </Card>
@@ -208,11 +268,14 @@ const MyMembership = () => {
                 required
               >
                 <option value="">Choose a plan...</option>
-                {plans.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} - ${p.price} ({p.duration} days)
-                  </option>
-                ))}
+                {plans.map(p => {
+                  const planId = p.id || p._id
+                  return (
+                    <option key={planId} value={planId}>
+                      {p.name} - ₹{p.price !== undefined && p.price !== null ? Number(p.price).toFixed(2) : '0.00'} ({p.duration} days)
+                    </option>
+                  )
+                })}
               </Form.Select>
             </Form.Group>
             {selectedPlan && (

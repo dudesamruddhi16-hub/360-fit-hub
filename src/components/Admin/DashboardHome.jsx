@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Row, Col } from 'react-bootstrap'
-import { getAllItems, STORES } from '../../db/indexedDB'
+import { usersService, membershipsService, paymentsService } from '../../services'
+import { normalizeItem } from '../../utils/helpers'
 
 const DashboardHome = () => {
   const [stats, setStats] = useState({
@@ -13,14 +14,17 @@ const DashboardHome = () => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const users = await getAllItems(STORES.USERS)
-        const members = users.filter(u => u.role === 'user')
-        const trainers = users.filter(u => u.role === 'trainer')
-        const memberships = await getAllItems(STORES.MEMBERSHIPS)
-        const payments = await getAllItems(STORES.PAYMENTS)
+        const users = await usersService.getAll()
+        const normalizedUsers = normalizeItem(users)
+        const members = normalizedUsers.filter(u => u.role === 'user')
+        const trainers = normalizedUsers.filter(u => u.role === 'trainer')
+        const memberships = await membershipsService.getAll()
+        const normalizedMemberships = normalizeItem(memberships)
+        const payments = await paymentsService.getAll()
+        const normalizedPayments = normalizeItem(payments)
         
-        const revenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0)
-        const activeMemberships = memberships.filter(m => {
+        const revenue = normalizedPayments.reduce((sum, p) => sum + (p.amount || 0), 0)
+        const activeMemberships = normalizedMemberships.filter(m => {
           if (!m.endDate) return false
           return new Date(m.endDate) > new Date()
         })
