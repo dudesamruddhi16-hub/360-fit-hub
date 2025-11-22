@@ -80,14 +80,14 @@ const Login = () => {
             <p className="mb-2" style={{ color: '#666' }}>
               Don't have an account? <Link to="/signup" style={{ color: '#D4AF37', fontWeight: '600', textDecoration: 'none' }}>Sign up here</Link>
             </p>
-            <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px' }}>
+            {/* <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px' }}>
               <small style={{ color: '#666', fontWeight: '600', display: 'block', marginBottom: '0.5rem' }}>Demo Credentials:</small>
               <small style={{ color: '#888', fontSize: '0.8rem', lineHeight: '1.8' }}>
                 Admin: admin@gym.com / admin123<br />
                 Trainer: trainer@gym.com / trainer123<br />
                 User: user@gym.com / user123
               </small>
-            </div>
+            </div> */}
           </div>
         </Card.Body>
       </Card>
