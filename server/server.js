@@ -18,7 +18,12 @@ if (!MONGO_URI) {
   process.exit(1)
 }
 
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true, dbName: process.env.MONGO_DB_NAME || '360fit' })
+mongoose.connect(MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  dbName: process.env.MONGO_DB_NAME || '360fit',
+  serverSelectionTimeoutMS: 20000
+})
   .then(async () => {
     console.log('MongoDB connected')
     try {
