@@ -9,11 +9,13 @@ import TrainerDashboard from './components/Dashboard/TrainerDashboard'
 import UserDashboard from './components/Dashboard/UserDashboard'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import './App.css'
+import SessionTimeout from './components/Auth/SessionTimeout' // added
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
+        <SessionTimeout /> {/* session management overlay */}
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
@@ -42,9 +44,10 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   )
 }
 

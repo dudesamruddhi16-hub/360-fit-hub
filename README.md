@@ -1,6 +1,6 @@
 # Gym Management System
 
-A comprehensive Gym Management System built with React.js, Bootstrap, and IndexedDB. This system provides separate dashboards for Admin, Trainer, and User roles with complete gym management features.
+A comprehensive Gym Management System built with React.js, Bootstrap, and mongoDB. This system provides separate dashboards for Admin, Trainer, and User roles with complete gym management features.
 
 ## Features
 
@@ -182,6 +182,52 @@ The system uses IndexedDB with the following stores:
 ## License
 
 This project is open source and available for educational purposes.
+
+## API Routes (implemented in server.js)
+
+Below are the API routes implemented in server.js. The server exposes generic CRUD endpoints that map a :store param to Mongoose models. Available stores: users, memberships, membershipPlans, dietPlans, workoutPlans, exercises, progress, payments, trainerAssignments.
+
+- GET /api/:store
+  - Purpose: list documents (optionally accepts query params to filter)
+  - Example: GET http://localhost:5000/api/users
+
+- GET /api/:store/query?field=FIELD&value=VALUE
+  - Purpose: search by a given field (supports case-insensitive string matching; validates id-like fields)
+  - Query params: field (required), value (required)
+  - Example: GET http://localhost:5000/api/users/query?field=email&value=admin@gym.com
+
+- GET /api/:store/:id
+  - Purpose: get a single document by _id
+  - URL param: id (validated as ObjectId)
+  - Example: GET http://localhost:5000/api/users/691f6746dbf69a4b6d4fd952
+
+- POST /api/:store
+  - Purpose: create a new document in the store
+  - Body: JSON document matching the model
+  - Example: POST http://localhost:5000/api/users  { "email": "...", "name": "..." }
+
+- PUT /api/:store/:id
+  - Purpose: update document by id (returns updated document)
+  - URL param: id
+  - Body: JSON with fields to update
+  - Example: PUT http://localhost:5000/api/users/691f6746...  { "name": "New" }
+
+- DELETE /api/:store/:id
+  - Purpose: delete document by id
+  - URL param: id
+  - Example: DELETE http://localhost:5000/api/users/691f6746...
+
+- POST /api/seed
+  - Purpose: populate the database with initial demo data (users, plans, exercises, etc.)
+  - Example: POST http://localhost:5000/api/seed
+
+Socket / realtime
+- Socket.io is initialized in server.js (io.on('connection', ...)). The server accepts socket connections for realtime features. See server.js for event names and handlers.
+
+Notes
+- The `/api/:store/query` route must be defined before `/api/:store/:id` to avoid ObjectId cast errors (server.js includes this ordering and id validation).
+- If collections appear under the wrong DB, set `MONGO_DB_NAME=360fit` in `server/.env` or include the DB name in `MONGO_URI`.
+- Use the frontend API adapter (src/db/indexedDB.js) which now proxies to these backend routes via axios — this preserves the previous frontend API surface while using MongoDB.
 
 
 

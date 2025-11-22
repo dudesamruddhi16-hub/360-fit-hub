@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
+import { useAuth } from '../../context/AuthContext'
 import {
   ResponsiveContainer,
   PieChart,
@@ -10,55 +11,60 @@ import {
 } from 'recharts'
 
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')
-const API_PREFIX = `${API_BASE}/api`
 
 const COLORS_COMPOSITION = ['#36A2EB', '#FF6384', '#FFCE56']
 const COLORS_PROGRESS = ['#4BC0C0', '#E7E9ED']
 
-export default function ProgressTracking({ userId: propUserId }) {
+export default function MyProgressGraph({ userId: propUserId }) {
+  const { user } = useAuth()
+
+  // Always use the currently logged in user id for the graph.
+  // Ignore any propUserId to prevent showing another user's data.
+  const loggedUserId = String(user?.id || user?._id || '')
+  const allowedUserId = loggedUserId
+
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
-  const [goalWeight, setGoalWeight] = useState('')
   const [error, setError] = useState(null)
+  const [goalWeight, setGoalWeight] = useState('')
 
-  const getUserId = () => {
-    if (propUserId) return propUserId
-    try {
-      const u = JSON.parse(localStorage.getItem('user'))
-      return u?.id || u?._id || ''
-    } catch (e) {
-      return ''
-    }
-  }
-
-  const userId = getUserId()
-
+  // reload when the logged-in user changes
   useEffect(() => {
-    if (!userId) {
-      setLoading(false)
-      return
-    }
+    let cancelled = false
     const load = async () => {
+      if (!allowedUserId) {
+        setEntries([])
+        setLoading(false)
+        return
+      }
       setLoading(true)
       try {
-        const res = await axios.get(`${API_PREFIX}/progress`, { params: { userId } })
+        const res = await axios.get(`${API_BASE}/progress`, { params: { userId: allowedUserId } })
+        if (cancelled) return
         const data = Array.isArray(res.data) ? res.data.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) : []
         setEntries(data)
-        if (data.length && !goalWeight) {
+        if (data.length) {
           const init = Number(data[0].weight) || 0
           if (init) setGoalWeight((init * 0.95).toFixed(1))
+        } else {
+          setGoalWeight('')
         }
         setError(null)
       } catch (err) {
+        if (cancelled) return
         setError(err?.response?.data?.error || err.message || 'Failed to load progress')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
+    // clear previous data immediately when user changes
+    setEntries([])
+    setError(null)
     load()
-  }, [userId])
+    return () => { cancelled = true }
+  }, [allowedUserId])
 
-  if (!userId) return <div>Please login to view your progress.</div>
+  if (!loggedUserId) return <div>Please sign in to view your progress.</div>
   if (loading) return <div>Loading progress...</div>
   if (error) return <div style={{ color: 'red' }}>{error}</div>
   if (!entries.length) return <div>No progress entries found.</div>
@@ -94,9 +100,8 @@ export default function ProgressTracking({ userId: propUserId }) {
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: 16 }}>
-      <h3>Donut Chart</h3>
+      <h5>Progress Overview</h5>
       <p style={{ color: '#666' }}>{subtitle}</p>
-
       <div style={{ height: 320 }}>
         <ResponsiveContainer>
           <PieChart>
@@ -113,7 +118,7 @@ export default function ProgressTracking({ userId: propUserId }) {
                 <Cell key={`cell-${index}`} fill={hasComposition ? COLORS_COMPOSITION[index % COLORS_COMPOSITION.length] : COLORS_PROGRESS[index % COLORS_PROGRESS.length]} />
               ))}
             </Pie>
-            <Tooltip formatter={(value) => `${Number(value).toFixed(1)}${hasComposition ? '%' : '%'}`} />
+            <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
             <Legend verticalAlign="bottom" height={36} />
           </PieChart>
         </ResponsiveContainer>
@@ -140,7 +145,7 @@ export default function ProgressTracking({ userId: propUserId }) {
       )}
 
       <div style={{ marginTop: 18 }}>
-        <h5>Recent entries</h5>
+        <h6>Recent entries</h6>
         <ul>
           {entries.slice().reverse().slice(0, 6).map((e) => (
             <li key={e.id || e._id}>
