@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
 import { useAuth } from '../../context/AuthContext'
 import {
   ResponsiveContainer,
@@ -9,17 +8,15 @@ import {
   Tooltip,
   Legend
 } from 'recharts'
+import { progressService } from '../../services/progressService' // added
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')
+const API_BASE = (import.meta.env.VITE_API_URL).replace(/\/$/, '')
 
 const COLORS_COMPOSITION = ['#36A2EB', '#FF6384', '#FFCE56']
 const COLORS_PROGRESS = ['#4BC0C0', '#E7E9ED']
 
 export default function MyProgressGraph({ userId: propUserId }) {
   const { user } = useAuth()
-
-  // Always use the currently logged in user id for the graph.
-  // Ignore any propUserId to prevent showing another user's data.
   const loggedUserId = String(user?.id || user?._id || '')
   const allowedUserId = loggedUserId
 
@@ -28,7 +25,6 @@ export default function MyProgressGraph({ userId: propUserId }) {
   const [error, setError] = useState(null)
   const [goalWeight, setGoalWeight] = useState('')
 
-  // reload when the logged-in user changes
   useEffect(() => {
     let cancelled = false
     const load = async () => {
@@ -39,12 +35,12 @@ export default function MyProgressGraph({ userId: propUserId }) {
       }
       setLoading(true)
       try {
-        const res = await axios.get(`${API_BASE}/progress`, { params: { userId: allowedUserId } })
+        const data = await progressService.getByUser(allowedUserId) // use service
         if (cancelled) return
-        const data = Array.isArray(res.data) ? res.data.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) : []
-        setEntries(data)
-        if (data.length) {
-          const init = Number(data[0].weight) || 0
+        const sorted = Array.isArray(data) ? data.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) : []
+        setEntries(sorted)
+        if (sorted.length) {
+          const init = Number(sorted[0].weight) || 0
           if (init) setGoalWeight((init * 0.95).toFixed(1))
         } else {
           setGoalWeight('')
@@ -57,7 +53,6 @@ export default function MyProgressGraph({ userId: propUserId }) {
         if (!cancelled) setLoading(false)
       }
     }
-    // clear previous data immediately when user changes
     setEntries([])
     setError(null)
     load()

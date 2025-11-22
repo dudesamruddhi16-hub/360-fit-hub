@@ -1,22 +1,27 @@
 import apiClient from './api'
 
 export const progressService = {
-  // Get all progress records
-  getAll: (params = {}) => apiClient.get('/progress', params),
-
-  // Get progress by ID
-  getById: (id) => apiClient.get(`/progress/${id}`),
-
-  // Create new progress record
-  create: (progressData) => apiClient.post('/progress', progressData),
-
-  // Update progress record
-  update: (id, progressData) => apiClient.put(`/progress/${id}`, progressData),
-
-  // Delete progress record
-  delete: (id) => apiClient.delete(`/progress/${id}`),
-
-  // Query progress by field
-  query: (field, value) => apiClient.get('/progress/query', { field, value }),
+  list(params = {}) {
+    return apiClient.get('/progress', { params }).then(r => r.data)
+  },
+  get(id) {
+    return apiClient.get(`/progress/${id}`).then(r => r.data)
+  },
+  getByUser(userId) {
+    return apiClient.get('/progress', { params: { userId } }).then(r => r.data)
+  },
+  create(doc) {
+    return apiClient.post('/progress', doc).then(r => r.data)
+  },
+  update(id, doc) {
+    return apiClient.put(`/progress/${id}`, doc).then(r => r.data)
+  },
+  remove(id) {
+    return apiClient.delete(`/progress/${id}`).then(r => r.data)
+  },
+  query(field, value) {
+    return apiClient.get('/progress/query', { params: { field, value } }).then(r => r.data)
+  }
 }
+
 
