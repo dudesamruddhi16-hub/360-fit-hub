@@ -7,7 +7,7 @@ import { normalizeItem } from '../../utils/helpers'
 const MyDiet = () => {
   const { user } = useAuth()
   const [diets, setDiets] = useState([])
-
+  console.log('Diets:', diets)
   useEffect(() => {
     loadData()
   }, [])

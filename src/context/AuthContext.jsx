@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react'
-import { usersService } from '../services'
+import { usersService, apiClient } from '../services'
 
 const AuthContext = createContext()
 
@@ -25,43 +25,31 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Check if user is logged in on mount via server session
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const storedUser = localStorage.getItem('gymUser')
-    if (storedUser) {
+    const checkAuth = async () => {
       try {
-        setUser(JSON.parse(storedUser))
+        const { user } = await apiClient.get('/auth/me')
+        setUser(normalizeUser(user))
       } catch (error) {
-        console.error('Error parsing stored user:', error)
-        localStorage.removeItem('gymUser')
+        // Not authenticated or error
+        setUser(null)
+      } finally {
+        setLoading(false)
       }
     }
-    setLoading(false)
+    checkAuth()
   }, [])
 
   const login = async (email, password) => {
-    console.log('Logged in user:', email, password);
     try {
-      const users = await usersService.query('email', email)
-        console.log('users found:', users);
-      if (users.length === 0) {
-        throw new Error('User not found')
-      }
-
-    
-      const foundUser = users[0]
-      // In production, use proper password hashing (bcrypt, etc.)
-      if (foundUser.password !== password) {
-        throw new Error('Invalid password')
-      }
-      console.log('Logged in user:', users);
-      // Normalize user (convert _id to id and remove password)
-      const normalizedUser = normalizeUser(foundUser)
-      setUser(normalizedUser)
-      localStorage.setItem('gymUser', JSON.stringify(normalizedUser))
-      return { success: true, user: normalizedUser }
+      const { user } = await apiClient.post('/auth/login', { email, password })
+      const normalized = normalizeUser(user)
+      setUser(normalized)
+      return { success: true, user: normalized }
     } catch (error) {
-      return { success: false, error: error.message }
+      console.error('Login error:', error)
+      return { success: false, error: error.response?.data?.error || error.message }
     }
   }
 
@@ -81,22 +69,24 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Create user via API
-      const createdUser = await usersService.create(newUser)
+      await usersService.create(newUser)
 
-      // Normalize user (convert _id to id and remove password)
-      const normalizedUser = normalizeUser(createdUser)
-      setUser(normalizedUser)
-      localStorage.setItem('gymUser', JSON.stringify(normalizedUser))
-      
-      return { success: true, user: normalizedUser }
+      // Auto-login after signup
+      return login(userData.email, userData.password)
     } catch (error) {
       return { success: false, error: error.message }
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem('gymUser')
+  const logout = async () => {
+    try {
+      await apiClient.post('/auth/logout')
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      setUser(null)
+      // Optional: Redirect to login or clear other state
+    }
   }
 
   const value = {

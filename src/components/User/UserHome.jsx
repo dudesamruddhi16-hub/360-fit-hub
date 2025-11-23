@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Row, Col, ProgressBar, Button } from 'react-bootstrap'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { membershipsService, trainerAssignmentsService, workoutPlansService, dietPlansService, progressService, usersService } from '../../services'
 import { normalizeItem } from '../../utils/helpers'
@@ -7,6 +8,7 @@ import VideoCall from '../VideoCall/VideoCall'
 
 const UserHome = () => {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [stats, setStats] = useState({
     hasMembership: false,
     hasTrainer: false,
@@ -65,6 +67,11 @@ const UserHome = () => {
       const diets = await dietPlansService.query('userId', user.id)
       const progress = await progressService.query('userId', user.id)
 
+      console.log('Memberships:', normalizedMemberships)
+      console.log('Assignments:', assignments)
+      console.log('Workouts:', workouts)
+      console.log('Diets:', diets)
+      console.log('Progress:', progress)
       setStats({
         hasMembership: !!activeMembership,
         hasTrainer: assignments.length > 0,
@@ -124,7 +131,10 @@ const UserHome = () => {
             </Card.Header>
             <Card.Body>
               {stats.hasWorkout ? (
-                <p className="text-success"><i className="bi bi-check-circle"></i> Active Workout Plan</p>
+                <div>
+                  <p className="text-success"><i className="bi bi-check-circle"></i> Active Workout Plan</p>
+                  <Button variant="outline-primary" size="sm" onClick={() => navigate('/user/workouts')}>View Details</Button>
+                </div>
               ) : (
                 <p className="text-muted">No workout plan assigned</p>
               )}
@@ -138,7 +148,10 @@ const UserHome = () => {
             </Card.Header>
             <Card.Body>
               {stats.hasDiet ? (
-                <p className="text-success"><i className="bi bi-check-circle"></i> Active Diet Plan</p>
+                <div>
+                  <p className="text-success"><i className="bi bi-check-circle"></i> Active Diet Plan</p>
+                  <Button variant="outline-success" size="sm" onClick={() => navigate('/user/diet')}>View Details</Button>
+                </div>
               ) : (
                 <p className="text-muted">No diet plan assigned</p>
               )}
@@ -154,8 +167,8 @@ const UserHome = () => {
               {stats.hasTrainer && trainer ? (
                 <div>
                   <p className="text-success"><i className="bi bi-check-circle"></i> Assigned to {trainer.name}</p>
-                  <Button 
-                    variant="primary" 
+                  <Button
+                    variant="primary"
                     className="mt-2"
                     onClick={handleVideoCall}
                   >

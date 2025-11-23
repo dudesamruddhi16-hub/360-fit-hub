@@ -64,7 +64,7 @@ const DietPlans = () => {
   const handleSave = async () => {
     try {
       const dietData = {
-        userId: parseInt(formData.userId),
+        userId: formData.userId,
         trainerId: user.id,
         name: formData.name,
         description: formData.description,

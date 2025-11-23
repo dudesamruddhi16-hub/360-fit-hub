@@ -8,4 +8,4 @@ export { exercisesService } from './exercisesService'
 export { progressService } from './progressService'
 export { paymentsService } from './paymentsService'
 export { trainerAssignmentsService } from './trainerAssignmentsService'
-
+export { apiClient } from './api'

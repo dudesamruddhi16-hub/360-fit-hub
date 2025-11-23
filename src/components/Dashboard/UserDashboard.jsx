@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Container, Navbar, Nav, Button } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -14,8 +14,20 @@ import Chatbot from '../Chatbot/Chatbot'
 const UserDashboard = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const location = useLocation()
   const [expanded, setExpanded] = useState(false)
+
+  const getActiveTab = (path) => {
+    if (path === '/user') return 'dashboard'
+    if (path.includes('/user/membership')) return 'membership'
+    if (path.includes('/user/workouts')) return 'workouts'
+    if (path.includes('/user/diet')) return 'diet'
+    if (path.includes('/user/progress')) return 'progress'
+    if (path.includes('/user/payment')) return 'payment'
+    return 'dashboard'
+  }
+
+  const activeTab = getActiveTab(location.pathname)
 
   const handleLogout = () => {
     logout()
@@ -24,15 +36,15 @@ const UserDashboard = () => {
 
   return (
     <div>
-      <Navbar 
-        expand="lg" 
+      <Navbar
+        expand="lg"
         className="navbar"
         expanded={expanded}
         onToggle={setExpanded}
       >
         <Container fluid>
           <Navbar.Brand><i className="bi bi-dumbbell"></i> My Gym</Navbar.Brand>
-          <Navbar.Toggle 
+          <Navbar.Toggle
             aria-controls="basic-navbar-nav"
             aria-label="Toggle navigation"
             className="hamburger-toggle"
@@ -43,22 +55,22 @@ const UserDashboard = () => {
           </Navbar.Toggle>
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="me-auto mobile-nav">
-              <Nav.Link active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); navigate('/user'); setExpanded(false) }}>
+              <Nav.Link active={activeTab === 'dashboard'} onClick={() => { navigate('/user'); setExpanded(false) }}>
                 <i className="bi bi-speedometer2"></i> <span>Dashboard</span>
               </Nav.Link>
-              <Nav.Link active={activeTab === 'membership'} onClick={() => { setActiveTab('membership'); navigate('/user/membership'); setExpanded(false) }}>
+              <Nav.Link active={activeTab === 'membership'} onClick={() => { navigate('/user/membership'); setExpanded(false) }}>
                 <i className="bi bi-card-checklist"></i> <span>Membership</span>
               </Nav.Link>
-              <Nav.Link active={activeTab === 'workouts'} onClick={() => { setActiveTab('workouts'); navigate('/user/workouts'); setExpanded(false) }}>
+              <Nav.Link active={activeTab === 'workouts'} onClick={() => { navigate('/user/workouts'); setExpanded(false) }}>
                 <i className="bi bi-activity"></i> <span>Workouts</span>
               </Nav.Link>
-              <Nav.Link active={activeTab === 'diet'} onClick={() => { setActiveTab('diet'); navigate('/user/diet'); setExpanded(false) }}>
+              <Nav.Link active={activeTab === 'diet'} onClick={() => { navigate('/user/diet'); setExpanded(false) }}>
                 <i className="bi bi-cup-hot"></i> <span>Diet Plan</span>
               </Nav.Link>
-              <Nav.Link active={activeTab === 'progress'} onClick={() => { setActiveTab('progress'); navigate('/user/progress'); setExpanded(false) }}>
+              <Nav.Link active={activeTab === 'progress'} onClick={() => { navigate('/user/progress'); setExpanded(false) }}>
                 <i className="bi bi-graph-up"></i> <span>Progress</span>
               </Nav.Link>
-              <Nav.Link active={activeTab === 'payment'} onClick={() => { setActiveTab('payment'); navigate('/user/payment'); setExpanded(false) }}>
+              <Nav.Link active={activeTab === 'payment'} onClick={() => { navigate('/user/payment'); setExpanded(false) }}>
                 <i className="bi bi-credit-card"></i> <span>Payment</span>
               </Nav.Link>
             </Nav>

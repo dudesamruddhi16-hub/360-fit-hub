@@ -22,7 +22,7 @@ const DashboardHome = () => {
         const normalizedMemberships = normalizeItem(memberships)
         const payments = await paymentsService.getAll()
         const normalizedPayments = normalizeItem(payments)
-        
+
         const revenue = normalizedPayments.reduce((sum, p) => sum + (p.amount || 0), 0)
         const activeMemberships = normalizedMemberships.filter(m => {
           if (!m.endDate) return false
@@ -68,8 +68,8 @@ const DashboardHome = () => {
         <Col md={3}>
           <Card className="stats-card">
             <Card.Body>
-              <h3>${stats.totalRevenue.toFixed(2)}</h3>
-              <p><i className="bi bi-currency-dollar"></i> Total Revenue</p>
+              <h3>₹{stats.totalRevenue.toFixed(2)}</h3>
+              <p><i className="bi bi-currency-rupee"></i> Total Revenue</p>
             </Card.Body>
           </Card>
         </Col>

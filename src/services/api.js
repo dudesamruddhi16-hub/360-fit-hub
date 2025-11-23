@@ -9,6 +9,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
   timeout: 30000, // 30 seconds timeout
 })
 
@@ -31,10 +32,10 @@ apiClient.interceptors.request.use(
 
     // Log request in development
     if (import.meta.env.DEV) {
-      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
-        params: config.params,
-        data: config.data,
-      })
+      // console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+      //   params: config.params,
+      //   data: config.data,
+      // })
     }
 
     return config

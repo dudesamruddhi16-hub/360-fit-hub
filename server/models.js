@@ -16,23 +16,78 @@ const userSchema = new mongoose.Schema({
 
 const genericSchema = (schemaDef) => new mongoose.Schema({ ...schemaDef, createdAt: { type: Date, default: Date.now } })
 
-const membershipSchema = genericSchema({ 
-  userId: mongoose.Types.ObjectId, 
-  planId: mongoose.Types.ObjectId, 
+const membershipSchema = genericSchema({
+  userId: mongoose.Schema.Types.ObjectId,
+  planId: mongoose.Schema.Types.ObjectId,
   planName: String,
   price: Number,
-  status: String, 
-  startDate: Date, 
-  endDate: Date,
-  activatedAt: Date
+  status: String,
+  startDate: Date,
+  endDate: Date
 })
-const planSchema = genericSchema({ name: String, price: Number, duration: Number, features: [String] })
-const dietSchema = genericSchema({ userId: mongoose.Types.ObjectId, trainerId: mongoose.Types.ObjectId, name: String, description: String, meals: Array })
-const workoutSchema = genericSchema({ userId: mongoose.Types.ObjectId, trainerId: mongoose.Types.ObjectId, name: String, description: String, exercises: Array })
-const exerciseSchema = genericSchema({ name: String, category: String, description: String, sets: Number, reps: Number, duration: Number })
-const progressSchema = genericSchema({ userId: mongoose.Types.ObjectId, date: Date, weight: Number, bodyFat: Number, muscleMass: Number, notes: String })
-const paymentSchema = genericSchema({ userId: mongoose.Types.ObjectId, membershipId: mongoose.Types.ObjectId, amount: Number, planName: String, date: Date, status: String, method: String, transactionId: String })
-const assignmentSchema = genericSchema({ userId: mongoose.Types.ObjectId, trainerId: mongoose.Types.ObjectId })
+
+const planSchema = genericSchema({
+  name: String,
+  price: Number,
+  duration: Number,
+  features: [String]
+})
+
+const dietSchema = genericSchema({
+  userId: mongoose.Schema.Types.ObjectId,
+  trainerId: mongoose.Schema.Types.ObjectId,
+  name: String,
+  description: String,
+  meals: [{
+    name: String,
+    calories: Number,
+    food: String,
+    mealType: String,
+    time: String
+  }]
+})
+
+const workoutSchema = genericSchema({
+  userId: mongoose.Schema.Types.ObjectId,
+  trainerId: mongoose.Schema.Types.ObjectId,
+  name: String,
+  description: String,
+  exercises: [{
+    exerciseId: mongoose.Schema.Types.ObjectId,
+    sets: Number,
+    reps: Number,
+    duration: Number
+  }]
+})
+
+const exerciseSchema = genericSchema({
+  name: String,
+  category: String,
+  description: String,
+  sets: Number,
+  reps: Number,
+  duration: Number
+})
+
+const progressSchema = genericSchema({
+  userId: mongoose.Schema.Types.ObjectId,
+  date: { type: Date, default: Date.now },
+  weight: Number,
+  notes: String
+})
+
+const paymentSchema = genericSchema({
+  userId: mongoose.Schema.Types.ObjectId,
+  amount: Number,
+  method: String,
+  status: String
+})
+
+const assignmentSchema = genericSchema({
+  userId: mongoose.Schema.Types.ObjectId,
+  trainerId: mongoose.Schema.Types.ObjectId,
+  status: { type: String, default: 'active' }
+})
 
 const User = mongoose.model('User', userSchema)
 const Membership = mongoose.model('Membership', membershipSchema)
@@ -48,6 +103,21 @@ const TrainerAssignment = mongoose.model('TrainerAssignment', assignmentSchema)
 const seedInitialData = async () => {
   try {
     const usersCount = await User.countDocuments()
+
+    // Ensure specific admin user exists
+    const specificUser = await User.findOne({ email: 'yogesh@gym.com' })
+    if (!specificUser) {
+      await User.create({
+        email: 'yogesh@gym.com',
+        password: 'yogesh123',
+        name: 'Gym Owner',
+        role: 'admin',
+        phone: '9623002470',
+        age: 34
+      })
+      console.log('Seeded specific user: yogesh@gym.com')
+    }
+
     if (usersCount > 0) return
 
     // Create users
