@@ -67,11 +67,6 @@ const UserHome = () => {
       const diets = await dietPlansService.query('userId', user.id)
       const progress = await progressService.query('userId', user.id)
 
-      console.log('Memberships:', normalizedMemberships)
-      console.log('Assignments:', assignments)
-      console.log('Workouts:', workouts)
-      console.log('Diets:', diets)
-      console.log('Progress:', progress)
       setStats({
         hasMembership: !!activeMembership,
         hasTrainer: assignments.length > 0,

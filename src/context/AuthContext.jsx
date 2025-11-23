@@ -24,7 +24,6 @@ const normalizeUser = (user) => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-
   // Check if user is logged in on mount via server session
   useEffect(() => {
     const checkAuth = async () => {
@@ -39,7 +38,7 @@ export const AuthProvider = ({ children }) => {
       }
     }
     checkAuth()
-  }, [])
+  }, []) // re-check if user state changes
 
   const login = async (email, password) => {
     try {
@@ -50,6 +49,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Login error:', error)
       return { success: false, error: error.response?.data?.error || error.message }
+    } finally {
+      setLoading(false)
     }
   }
 
