@@ -23,4 +23,21 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split React and React-related libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Split Bootstrap UI libraries
+          'ui-vendor': ['react-bootstrap', 'bootstrap'],
+          // Split chart library
+          'charts': ['recharts'],
+          // Split utilities and services
+          'utils': ['axios'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Increase limit to 1000 kB
+  },
 })
