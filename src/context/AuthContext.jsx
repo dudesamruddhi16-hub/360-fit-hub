@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react'
 import { useLocation } from 'react-router-dom'
 import { usersService, apiClient } from '../services'
+import { jwtDecode } from 'jwt-decode'
 
 const AuthContext = createContext()
 
@@ -27,39 +28,91 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const location = useLocation()
 
-  // Check if user is logged in on mount via server session
+  // Initialize auth state from localStorage token
   useEffect(() => {
-    const checkAuth = async () => {
-      // Skip auth check on landing page (home page doesn't need authentication)
-      if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/signup') {
-        setLoading(false)
-        return
-      }
+    const initAuth = async () => {
+      const token = localStorage.getItem('authToken')
 
+      if (token) {
+        try {
+          const decoded = jwtDecode(token)
+          const currentTime = Date.now() / 1000
+
+          if (decoded.exp < currentTime) {
+            // Token expired
+            localStorage.removeItem('authToken')
+            // Fallback to server check in case cookie is still valid
+            await checkServerAuth()
+          } else {
+            // Token valid - set initial user state immediately
+            setUser({
+              id: decoded.id,
+              role: decoded.role,
+              ...decoded
+            })
+
+            // Background fetch to sync user details
+            apiClient.get('/auth/me')
+              .then(({ user }) => {
+                setUser(normalizeUser(user))
+              })
+              .catch(() => {
+                // If server rejects token but we have it, maybe it's revoked
+                // But let's not be too aggressive to clear it unless 401
+              })
+            setLoading(false)
+            return
+          }
+        } catch (error) {
+          localStorage.removeItem('authToken')
+          await checkServerAuth()
+        }
+      } else {
+        // No token, check server session (cookies)
+        await checkServerAuth()
+      }
+    }
+
+    const checkServerAuth = async () => {
       try {
-        const { user } = await apiClient.get('/auth/me')
-        setUser(normalizeUser(user))
+        // Only check if not on public pages to avoid unnecessary 401s
+        const publicPages = ['/', '/login', '/signup']
+        if (!publicPages.includes(location.pathname)) {
+          const { user } = await apiClient.get('/auth/me')
+          setUser(normalizeUser(user))
+        } else {
+          // If on public page and no token, we are done
+        }
       } catch (error) {
-        // Not authenticated or error
         setUser(null)
       } finally {
         setLoading(false)
       }
     }
-    checkAuth()
-  }, [location.pathname]) // re-run when route changes
+
+    initAuth()
+  }, []) // Run only once on mount
 
   const login = async (email, password) => {
     try {
-      const { user } = await apiClient.post('/auth/login', { email, password })
+      const response = await apiClient.post('/auth/login', { email, password })
+      const { user, token } = response
+
+      // Save token to localStorage for header-based auth backup
+      if (token) {
+        localStorage.setItem('authToken', token)
+      } else {
+        console.warn('No token received in login response')
+      }
+
       const normalized = normalizeUser(user)
       setUser(normalized)
+      setLoading(false)
       return { success: true, user: normalized }
     } catch (error) {
       console.error('Login error:', error)
-      return { success: false, error: error.response?.data?.error || error.message }
-    } finally {
       setLoading(false)
+      return { success: false, error: error.response?.data?.error || error.message }
     }
   }
 
@@ -94,8 +147,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
+      localStorage.removeItem('authToken')
       setUser(null)
-      // Optional: Redirect to login or clear other state
     }
   }
 

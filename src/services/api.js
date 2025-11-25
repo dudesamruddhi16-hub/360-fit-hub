@@ -17,14 +17,19 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Get user token from localStorage if available
+    const token = localStorage.getItem('authToken')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+
+    // Legacy support for gymUser (optional, can be removed if not used anymore)
     const user = localStorage.getItem('gymUser')
     if (user) {
       try {
         const userData = JSON.parse(user)
-        // If you have a token in the future, add it here:
-        // if (userData.token) {
-        //   config.headers.Authorization = `Bearer ${userData.token}`
-        // }
+        if (userData.token && !token) {
+          config.headers.Authorization = `Bearer ${userData.token}`
+        }
       } catch (error) {
         console.error('Error parsing user data:', error)
       }
@@ -32,10 +37,10 @@ apiClient.interceptors.request.use(
 
     // Log request in development
     if (import.meta.env.DEV) {
-      // console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
-      //   params: config.params,
-      //   data: config.data,
-      // })
+      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+        params: config.params,
+        data: config.data,
+      })
     }
 
     return config
@@ -80,11 +85,9 @@ apiClient.interceptors.response.use(
       // Handle specific status codes
       switch (status) {
         case 401:
-          // Unauthorized - clear user data and redirect to login
-          localStorage.removeItem('gymUser')
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login'
-          }
+          // Unauthorized - clear user data
+          // We don't force redirect here to allow AuthContext to handle it
+          // localStorage.removeItem('gymUser') // We are using cookies now
           break
         case 403:
           // Forbidden

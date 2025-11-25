@@ -32,10 +32,10 @@ const Chatbot = () => {
   // AI Response Generator
   const generateResponse = (userMessage) => {
     const message = userMessage.toLowerCase().trim()
-    
+
     // Greetings
     if (message.match(/hi|hello|hey|good morning|good afternoon|good evening/)) {
-      return "Hello! Welcome to Gold's Gym! I'm here to help you with any questions about our gym, membership plans, programs, or facilities. What would you like to know?"
+      return "Hello! Welcome to 360 Hub Gym! I'm here to help you with any questions about our gym, membership plans, programs, or facilities. What would you like to know?"
     }
 
     // Membership Plans
@@ -80,7 +80,7 @@ const Chatbot = () => {
 
     // Free Trial
     if (message.match(/trial|free|demo|visit|tour|try|test|sample/)) {
-      return "Yes! We offer a FREE trial! 🎉\n\n✨ What's included:\n• Full gym access\n• All equipment\n• Group classes\n• No commitment required\n\n📅 How to get started:\n• Click 'Book Your Free Trial' on our website\n• Or call us at +91 8976834832\n• Visit any of our 156 locations\n\nCome experience Gold's Gym today!"
+      return "Yes! We offer a FREE trial! 🎉\n\n✨ What's included:\n• Full gym access\n• All equipment\n• Group classes\n• No commitment required\n\n📅 How to get started:\n• Click 'Book Your Free Trial' on our website\n• Or call us at +91 8976834832\n• Visit any of our 156 locations\n\nCome experience 360 Hub Gym today!"
     }
 
     // Contact
@@ -105,7 +105,7 @@ const Chatbot = () => {
       "Thanks for your question! For detailed information, you can:\n• Visit our website sections\n• Call us at +91 8976834832\n• Email customer.care@goldsgym.in\n\nWhat else can I help you with today?",
       "I'm here to help! You can ask me about:\n• Membership plans\n• Programs and classes\n• Facilities\n• Personal training\n• Nutrition plans\n• Payment options\n\nWhat would you like to know?"
     ]
-    
+
     return defaultResponses[Math.floor(Math.random() * defaultResponses.length)]
   }
 
@@ -144,7 +144,7 @@ const Chatbot = () => {
     }
     setInput(quickMessages[action])
     setTimeout(() => {
-      handleSend({ preventDefault: () => {} })
+      handleSend({ preventDefault: () => { } })
     }, 100)
   }
 

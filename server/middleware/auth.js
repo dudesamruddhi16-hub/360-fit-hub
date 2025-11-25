@@ -17,6 +17,12 @@ const attachUserFromToken = async (req, res, next) => {
         const dbUser = await models.User.findById(payload.id).lean()
         if (!dbUser) return next()
 
+        // Validate token against database
+        if (dbUser.token !== token) {
+            // Token mismatch (e.g. logged out or logged in elsewhere)
+            return next()
+        }
+
         req.user = { id: payload.id, role: payload.role }
         return next()
     } catch (err) {

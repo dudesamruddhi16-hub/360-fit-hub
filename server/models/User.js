@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
     height: Number,
     specialization: String,
     experience: String,
+    token: String,
     createdAt: { type: Date, default: Date.now }
 });
 

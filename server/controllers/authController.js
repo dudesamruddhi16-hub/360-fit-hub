@@ -22,6 +22,10 @@ const login = async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         )
 
+        // Save token to database
+        user.token = token
+        await user.save()
+
         const cookieOptions = {
             httpOnly: true,
             sameSite: 'lax',
@@ -32,7 +36,8 @@ const login = async (req, res) => {
 
         const userObj = user.toObject()
         delete userObj.password
-        return res.json({ user: userObj })
+        // Return token in response for localStorage backup
+        return res.json({ user: userObj, token })
     } catch (err) {
         console.error('Auth login error:', err)
         return res.status(500).json({ error: 'Login failed' })
@@ -40,8 +45,15 @@ const login = async (req, res) => {
 }
 
 const logout = async (req, res) => {
-    res.clearCookie('token', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' })
-    return res.json({ success: true })
+    try {
+        if (req.user && req.user.id) {
+            await models.User.findByIdAndUpdate(req.user.id, { token: null })
+        }
+        res.clearCookie('token', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' })
+        return res.json({ success: true })
+    } catch (err) {
+        return res.status(500).json({ error: 'Logout failed' })
+    }
 }
 
 const getMe = async (req, res) => {

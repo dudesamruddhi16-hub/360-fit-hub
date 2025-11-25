@@ -27,17 +27,17 @@ const Footer = () => {
         <Row className="footer-content">
           <Col md={4} className="mb-4 mb-md-0">
             <h5 className="footer-title">
-              <i className="bi bi-dumbbell"></i> Gold's Gym
+              <i className="bi bi-dumbbell"></i> 360 Hub Gym
             </h5>
             <p className="footer-description">
               India's premier fitness destination. Join thousands of members achieving their fitness goals with world-class facilities and expert trainers.
             </p>
             <div className="footer-contact">
-              <p><i className="bi bi-telephone"></i> +91 8976834832</p>
-              <p><i className="bi bi-envelope"></i> customer.care@goldsgym.in</p>
+              <p><i className="bi bi-telephone"></i> +91 9763629356</p>
+              <p><i className="bi bi-envelope"></i> customer.care@360hubgym.in</p>
             </div>
           </Col>
-          
+
           <Col md={2} className="mb-4 mb-md-0">
             <h6 className="footer-heading">Quick Links</h6>
             <ul className="footer-links">
@@ -48,7 +48,7 @@ const Footer = () => {
               ))}
             </ul>
           </Col>
-          
+
           <Col md={3} className="mb-4 mb-md-0">
             <h6 className="footer-heading">Programs</h6>
             <ul className="footer-links">
@@ -59,14 +59,14 @@ const Footer = () => {
               ))}
             </ul>
           </Col>
-          
+
           <Col md={3}>
             <h6 className="footer-heading">Newsletter</h6>
             <p className="footer-newsletter-text">Sign up for our mailing list to get latest updates and offers</p>
             <div className="newsletter-form">
-              <input 
-                type="email" 
-                placeholder="Enter your email" 
+              <input
+                type="email"
+                placeholder="Enter your email"
                 className="newsletter-input"
               />
               <button className="newsletter-button">
@@ -75,11 +75,11 @@ const Footer = () => {
             </div>
           </Col>
         </Row>
-        
+
         <Row className="footer-bottom">
           <Col md={6}>
             <p className="mb-0">
-              &copy; {currentYear} Gold's Gym. All Rights Reserved.
+              &copy; {currentYear} 360 Hub Gym. All Rights Reserved.
             </p>
           </Col>
           <Col md={6} className="text-md-end">
