@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       // Skip auth check on landing page (home page doesn't need authentication)
-      if (location.pathname === '/') {
+      if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/signup') {
         setLoading(false)
         return
       }
