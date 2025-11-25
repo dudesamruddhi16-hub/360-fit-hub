@@ -1,11 +1,11 @@
-const mongoose = require('mongoose')
-const { models, seedInitialData } = require('../models')
+const mongoose = require('mongoose');
+const { models, seedInitialData } = require('../models');
 
 const connectDB = async () => {
-    const MONGO_URI = process.env.MONGO_URI
+    const MONGO_URI = process.env.MONGO_URI;
     if (!MONGO_URI) {
-        console.error('MONGO_URI not set in .env')
-        process.exit(1)
+        console.error('MONGO_URI not set in .env');
+        process.exit(1);
     }
 
     try {
@@ -14,17 +14,17 @@ const connectDB = async () => {
             useUnifiedTopology: true,
             dbName: process.env.MONGO_DB_NAME || '360fit',
             serverSelectionTimeoutMS: 20000
-        })
-        console.log('MongoDB connected')
+        });
+        console.log('MongoDB connected');
 
-        await Promise.all(Object.values(models).map(m => m.init()))
-        console.log('Mongoose models initialized')
+        await Promise.all(Object.values(models).map(m => m.init()));
+        console.log('Mongoose models initialized');
 
-        await seedInitialData()
+        await seedInitialData();
     } catch (err) {
-        console.error('MongoDB connection error:', err)
-        process.exit(1)
+        console.error('MongoDB connection error:', err);
+        process.exit(1);
     }
-}
+};
 
-module.exports = connectDB
+module.exports = connectDB;

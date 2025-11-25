@@ -1,0 +1,91 @@
+const User = require('./User');
+const Membership = require('./Membership');
+const MembershipPlan = require('./MembershipPlan');
+const DietPlan = require('./DietPlan');
+const WorkoutPlan = require('./WorkoutPlan');
+const Exercise = require('./Exercise');
+const Progress = require('./Progress');
+const Payment = require('./Payment');
+const TrainerAssignment = require('./TrainerAssignment');
+
+// Seed initial data (similar to indexedDB seed)
+const seedInitialData = async () => {
+    try {
+        const usersCount = await User.countDocuments()
+
+        // Ensure specific admin user exists
+        const specificUser = await User.findOne({ email: 'yogesh@gym.com' })
+        if (!specificUser) {
+            await User.create({
+                email: 'yogesh@gym.com',
+                password: 'yogesh123',
+                name: 'Gym Owner',
+                role: 'admin',
+                phone: '9623002470',
+                age: 34
+            })
+            console.log('Seeded specific user: yogesh@gym.com')
+        }
+
+        if (usersCount > 0) return
+
+        // Create users
+        const admin = await User.create({ email: 'admin@gym.com', password: 'admin123', name: 'Admin User', role: 'admin', phone: '1234567890' })
+        const trainer = await User.create({ email: 'trainer@gym.com', password: 'trainer123', name: 'John Trainer', role: 'trainer', phone: '1234567891', specialization: 'Weight Training', experience: '5 years' })
+        const user = await User.create({ email: 'user@gym.com', password: 'user123', name: 'Test User', role: 'user', phone: '1234567892', age: 25, weight: 70, height: 175 })
+
+        // Membership plans
+        const plans = await MembershipPlan.insertMany([
+            { name: 'Basic Plan', price: 29.99, duration: 30, features: ['Gym Access', 'Basic Equipment'] },
+            { name: 'Premium Plan', price: 49.99, duration: 30, features: ['Gym Access', 'All Equipment', 'Group Classes'] },
+            { name: 'VIP Plan', price: 79.99, duration: 30, features: ['Gym Access', 'All Equipment', 'Group Classes', 'Personal Trainer', 'Nutrition Plan'] }
+        ])
+
+        // Exercises
+        await Exercise.insertMany([
+            { name: 'Bench Press', category: 'Chest', description: 'Upper body strength exercise', sets: 3, reps: 10 },
+            { name: 'Squats', category: 'Legs', description: 'Lower body strength exercise', sets: 3, reps: 12 },
+            { name: 'Deadlift', category: 'Back', description: 'Full body strength exercise', sets: 3, reps: 8 },
+            { name: 'Pull-ups', category: 'Back', description: 'Upper body pulling exercise', sets: 3, reps: 10 },
+            { name: 'Running', category: 'Cardio', description: 'Cardiovascular exercise', duration: 30 }
+        ])
+
+        // Example membership for test user (link to first plan)
+        if (plans && plans.length) {
+            await Membership.create({
+                userId: user._id,
+                planId: plans[0]._id,
+                status: 'active',
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) // +30 days
+            })
+        }
+
+        // Example trainer assignment
+        await TrainerAssignment.create({ userId: user._id, trainerId: trainer._id })
+
+        console.log('SeedInitialData: inserted users, plans, exercises, membership, assignment')
+    } catch (err) {
+        // ignore duplicate key errors during re-seed attempt
+        if (err.code === 11000) {
+            console.warn('Seed skipped duplicate keys:', err.keyValue)
+            return
+        }
+        console.error('Error in seedInitialData:', err)
+        throw err
+    }
+}
+
+const models = {
+    User,
+    Membership,
+    MembershipPlan,
+    DietPlan,
+    WorkoutPlan,
+    Exercise,
+    Progress,
+    Payment,
+    TrainerAssignment
+};
+
+module.exports = { models, seedInitialData };

@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react'
+import { useLocation } from 'react-router-dom'
 import { usersService, apiClient } from '../services'
 
 const AuthContext = createContext()
@@ -24,9 +25,17 @@ const normalizeUser = (user) => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const location = useLocation()
+
   // Check if user is logged in on mount via server session
   useEffect(() => {
     const checkAuth = async () => {
+      // Skip auth check on landing page (home page doesn't need authentication)
+      if (location.pathname === '/') {
+        setLoading(false)
+        return
+      }
+
       try {
         const { user } = await apiClient.get('/auth/me')
         setUser(normalizeUser(user))
@@ -38,7 +47,7 @@ export const AuthProvider = ({ children }) => {
       }
     }
     checkAuth()
-  }, []) // re-check if user state changes
+  }, [location.pathname]) // re-run when route changes
 
   const login = async (email, password) => {
     try {
@@ -100,6 +109,3 @@ export const AuthProvider = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-
-
-

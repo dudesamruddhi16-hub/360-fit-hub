@@ -1,15 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { getAll, getById, create, update, remove } = require('../controllers/genericController');
+const { getAll, getById, create, update, remove, queryByField } = require('../controllers/genericController');
 const { models } = require('../models');
-const { verifyToken } = require('../middleware/auth');
 
-const WorkoutPlan = models.WorkoutPlan;
-
-router.get('/', verifyToken, getAll(WorkoutPlan));
-router.get('/:id', verifyToken, getById(WorkoutPlan));
-router.post('/', verifyToken, create(WorkoutPlan));
-router.put('/:id', verifyToken, update(WorkoutPlan));
-router.delete('/:id', verifyToken, remove(WorkoutPlan));
+router.get('/query', queryByField(models.WorkoutPlan));
+router.get('/', getAll(models.WorkoutPlan));
+router.get('/:id', getById(models.WorkoutPlan));
+router.post('/', create(models.WorkoutPlan));
+router.put('/:id', update(models.WorkoutPlan));
+router.delete('/:id', remove(models.WorkoutPlan));
 
 module.exports = router;
