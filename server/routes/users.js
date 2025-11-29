@@ -8,7 +8,7 @@ router.get('/leaderboard', async (req, res) => {
     try {
         const leaders = await models.User.find({})
             .sort({ points: -1 })
-            .limit(10)
+            .limit(5)
             .select('name points role');
         res.json(leaders);
     } catch (err) {

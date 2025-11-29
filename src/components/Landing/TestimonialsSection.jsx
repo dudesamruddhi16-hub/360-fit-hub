@@ -1,24 +1,26 @@
 import React from 'react'
-import { Container, Row, Col, Card } from 'react-bootstrap'
+import { Container, Row, Col, Card, Badge } from 'react-bootstrap'
+import { testimonialsService } from '../../services'
 
 const TestimonialsSection = () => {
-  const testimonials = [
-    {
-      name: "Mayur Abnave",
-      text: "It's a very nice gym with world top class equipment of Life fitness and Hammer Strength, and people surrounding is also good, and staff of this branch is very kind, they help members very well and all the trainers are certified with good knowledge of teaching as well. Good place to achieve your goals.",
-      rating: 5
-    },
-    {
-      name: "Utkrisht Kaushik",
-      text: "So this place is more than just a gym. You can walk in and make friends that will guide you and help you out each time. They have great programs such as kickboxing, yoga, Zumba etc that you can opt for to change the routine once in a while.",
-      rating: 5
-    },
-    {
-      name: "Natasha Mondegari",
-      text: "Amazing staff.!!! Hygiene is always a priority here. There are lockers to keep our bags. The personal trainers are extremely helpful. I have been training under Pranay Bane and sir has been most motivating.",
-      rating: 5
+  const [testimonials, setTestimonials] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setLoading(true)
+        const data = await testimonialsService.getAll()
+        setTestimonials(data)
+      } catch (error) {
+        console.error('Error fetching testimonials:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchTestimonials()
+  }, [])
 
   return (
     <section id="testimonials" className="testimonials-section">
@@ -27,25 +29,34 @@ const TestimonialsSection = () => {
           <h2>Testimonials</h2>
           <p>See what our members have to say about their experience</p>
         </div>
-        <Row className="g-4">
-          {testimonials.map((testimonial, index) => (
-            <Col md={4} key={index}>
-              <Card className="testimonial-card">
-                <Card.Body>
-                  <div className="testimonial-rating">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <i key={i} className="bi bi-star-fill"></i>
-                    ))}
-                  </div>
-                  <Card.Text className="testimonial-text">"{testimonial.text}"</Card.Text>
-                  <Card.Footer className="testimonial-footer">
-                    <strong>{testimonial.name}</strong>
-                  </Card.Footer>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+        {loading ? (
+          <div className="text-center">
+            <p>Loading testimonials...</p>
+          </div>
+        ) : (
+          <Row className="g-4">
+            {testimonials.map((testimonial) => (
+              <Col md={4} key={testimonial._id}>
+                <Card className="testimonial-card h-100">
+                  <Card.Body>
+                    <div className="testimonial-rating mb-2">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <i key={i} className="bi bi-star-fill text-warning"></i>
+                      ))}
+                    </div>
+                    <Card.Text className="testimonial-text">"{testimonial.feedback}"</Card.Text>
+                    <Card.Footer className="testimonial-footer bg-transparent border-0 pt-3">
+                      <div className="d-flex align-items-center justify-content-between">
+                        <strong>{testimonial.name}</strong>
+                        <Badge bg="primary" className="ms-2">{testimonial.role}</Badge>
+                      </div>
+                    </Card.Footer>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
       </Container>
     </section>
   )

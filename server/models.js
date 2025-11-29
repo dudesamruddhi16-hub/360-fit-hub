@@ -98,6 +98,16 @@ const wellnessSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }, { collection: 'wellness' })
 
+const testimonialSchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
+  name: { type: String, required: true },
+  role: { type: String, default: 'Member' },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  feedback: { type: String, required: true },
+  isApproved: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now }
+}, { collection: 'testimonials' })
+
 const User = mongoose.model('User', userSchema)
 const Membership = mongoose.model('Membership', membershipSchema)
 const MembershipPlan = mongoose.model('MembershipPlan', planSchema)
@@ -108,12 +118,13 @@ const Progress = mongoose.model('Progress', progressSchema)
 const Payment = mongoose.model('Payment', paymentSchema)
 const TrainerAssignment = mongoose.model('TrainerAssignment', assignmentSchema)
 const Wellness = mongoose.model('Wellness', wellnessSchema)
+const Testimonial = mongoose.model('Testimonial', testimonialSchema)
 
 // Seed initial data (similar to indexedDB seed)
 const seedInitialData = async () => {
   try {
     const usersCount = await User.countDocuments()
-
+    console.log('Users count:', usersCount)
     // Ensure specific admin user exists
     const specificUser = await User.findOne({ email: 'yogesh@gym.com' })
     if (!specificUser) {
@@ -154,8 +165,15 @@ const seedInitialData = async () => {
     // Wellness
     await Wellness.insertMany([
       { title: 'Yoga', thumbnail: 'https://example.com/yoga.jpg', duration: '60 minutes', category: 'Yoga', url: 'https://www.youtube.com/watch?v=example' },
-      { title: 'Zumba', thumbnail: 'https://example.com/zumba.jpg', duration: '60 minutes', category: 'Zumba', url: 'https://www.youtube.com/watch?v=example' },
+      { title: 'Zumb a', thumbnail: 'https://example.com/zumba.jpg', duration: '60 minutes', category: 'Zumba', url: 'https://www.youtube.com/watch?v=example' },
       { title: 'Pilates', thumbnail: 'https://example.com/pilates.jpg', duration: '60 minutes', category: 'Pilates', url: 'https://www.youtube.com/watch?v=example' }
+    ])
+
+    // Testimonials
+    await Testimonial.insertMany([
+      { name: 'Sarah Johnson', role: 'Member', rating: 5, feedback: 'This gym has transformed my life! The trainers are amazing and the community is so supportive.', isApproved: true },
+      { name: 'Michael Chen', role: 'Premium Member', rating: 5, feedback: 'Best investment I\'ve made in my health. Lost 30 pounds in 3 months with their personalized plan.', isApproved: true },
+      { name: 'Emily Rodriguez', role: 'Member', rating: 4, feedback: 'Great facilities and friendly staff. The classes are challenging but rewarding!', isApproved: true }
     ])
 
     // Example membership for test user (link to first plan)
@@ -172,7 +190,7 @@ const seedInitialData = async () => {
     // Example trainer assignment
     await TrainerAssignment.create({ userId: user._id, trainerId: trainer._id })
 
-    console.log('SeedInitialData: inserted users, plans, exercises, membership, assignment')
+    console.log('SeedInitialData: inserted users, plans, exercises, membership, assignment, wellness, testimonials')
   } catch (err) {
     // ignore duplicate key errors during re-seed attempt
     if (err.code === 11000) {
@@ -195,7 +213,8 @@ module.exports = {
     Progress,
     Payment,
     TrainerAssignment,
-    Wellness
+    Wellness,
+    Testimonial
   },
   seedInitialData
 }

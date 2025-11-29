@@ -25,13 +25,18 @@ app.use(attachUserFromToken);
 app.use('/api', routes);
 
 // Serve static files from the React app
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
 
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
-  });
-}
+// Handle React routing, return all requests to React app
+// In Express 5, '*' is not valid, use regex /(.*)/
+app.get(/(.*)/, (req, res) => {
+  // Check if it's an API request that wasn't handled
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  res.sendFile(path.join(distPath, 'index.html'));
+});
 
 // Database connection
 connectDB();

@@ -9,6 +9,8 @@ import VideoCall from '../VideoCall/VideoCall'
 import StreakCounter from './StreakCounter'
 import LeaderboardPreview from './LeaderboardPreview'
 import AIWorkoutGenerator from './AIWorkoutGenerator'
+import TestimonialForm from './TestimonialForm'
+import { testimonialsService } from '../../services'
 
 const UserHome = () => {
   const { user } = useAuth()
@@ -22,11 +24,13 @@ const UserHome = () => {
   })
   const [trainer, setTrainer] = useState(null)
   const [videoCall, setVideoCall] = useState({ show: false, roomId: '', trainerName: '' })
+  const [myTestimonials, setMyTestimonials] = useState([])
 
   useEffect(() => {
     if (user?.id) {
       loadStats()
       loadTrainer()
+      loadMyTestimonials()
     }
   }, [user])
 
@@ -80,6 +84,15 @@ const UserHome = () => {
       })
     } catch (error) {
       console.error('Error loading stats:', error)
+    }
+  }
+
+  const loadMyTestimonials = async () => {
+    try {
+      const testimonials = await testimonialsService.getMyTestimonials()
+      setMyTestimonials(testimonials)
+    } catch (error) {
+      console.error('Error loading testimonials:', error)
     }
   }
 
@@ -176,6 +189,61 @@ const UserHome = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Testimonials Section */}
+      <Row className="mt-4">
+        <Col md={6} className="mb-3">
+          <Card>
+            <Card.Header>
+              <h5 className="mb-0">My Testimonials</h5>
+            </Card.Header>
+            <Card.Body>
+              {myTestimonials.length > 0 ? (
+                myTestimonials.map(testimonial => (
+                  <Card key={testimonial._id} className="mb-3 border-0 shadow-sm">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                          {[...Array(testimonial.rating)].map((_, i) => (
+                            <i key={i} className="bi bi-star-fill text-warning"></i>
+                          ))}
+                        </div>
+                        <span className={`badge bg-${testimonial.isApproved ? 'success' : 'warning'}`}>
+                          {testimonial.isApproved ? 'Approved' : 'Pending Approval'}
+                        </span>
+                      </div>
+                      <p className="mb-0">"{testimonial.feedback}"</p>
+                      <small className="text-muted">Submitted on {new Date(testimonial.createdAt).toLocaleDateString()}</small>
+                    </Card.Body>
+                  </Card>
+                ))
+              ) : (
+                <p className="text-muted">You haven't submitted any testimonials yet.</p>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={6} className="mb-3">
+          {myTestimonials.some(t => !t.isApproved) ? (
+            <Card className="h-100 border-0 shadow-sm bg-light">
+              <Card.Body className="d-flex flex-column justify-content-center align-items-center text-center">
+                <i className="bi bi-hourglass-split display-4 text-warning mb-3"></i>
+                <h5>Pending Approval</h5>
+                <p className="text-muted">
+                  Your testimonial is currently being reviewed by our team.
+                  Once approved, it will be displayed on our landing page.
+                </p>
+                <p className="small text-muted mb-0">
+                  You can submit a new testimonial after this one is processed.
+                </p>
+              </Card.Body>
+            </Card>
+          ) : (
+            <TestimonialForm onSubmitSuccess={loadMyTestimonials} />
+          )}
+        </Col>
+      </Row>
+
       {/* Video Call Modal */}
       <VideoCall
         show={videoCall.show}

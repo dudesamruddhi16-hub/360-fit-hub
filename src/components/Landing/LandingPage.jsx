@@ -14,10 +14,10 @@ const LandingPage = () => {
     <div className="landing-page">
       <Header />
       <HeroSlider />
-      <StatsSection />
       <DailyWellnessSection />
-      <ProgramsSection />
       <MinimalFitnessSection />
+      <StatsSection />
+      <ProgramsSection />
       <TestimonialsSection />
       <Footer />
       <Chatbot />
