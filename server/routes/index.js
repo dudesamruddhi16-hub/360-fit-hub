@@ -12,6 +12,7 @@ const exerciseRoutes = require('./exercises');
 const progressRoutes = require('./progress');
 const paymentRoutes = require('./payments');
 const trainerAssignmentRoutes = require('./trainerAssignments');
+const wellnessRoutes = require('./wellness');
 const seedRoutes = require('./seed');
 
 // Mount routes
@@ -26,6 +27,7 @@ router.use('/exercises', exerciseRoutes);
 router.use('/progress', progressRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/trainerAssignments', trainerAssignmentRoutes);
+router.use('/wellness', wellnessRoutes);
 router.use('/seed', seedRoutes);
 
 module.exports = router;

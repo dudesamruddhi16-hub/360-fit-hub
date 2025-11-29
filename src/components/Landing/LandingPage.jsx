@@ -6,6 +6,8 @@ import ProgramsSection from './ProgramsSection'
 import TestimonialsSection from './TestimonialsSection'
 import Footer from './Footer'
 import Chatbot from '../Chatbot/Chatbot'
+import DailyWellnessSection from './DailyWellnessSection'
+import MinimalFitnessSection from './MinimalFitnessSection'
 
 const LandingPage = () => {
   return (
@@ -13,7 +15,9 @@ const LandingPage = () => {
       <Header />
       <HeroSlider />
       <StatsSection />
+      <DailyWellnessSection />
       <ProgramsSection />
+      <MinimalFitnessSection />
       <TestimonialsSection />
       <Footer />
       <Chatbot />

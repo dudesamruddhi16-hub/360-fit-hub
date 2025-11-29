@@ -89,6 +89,15 @@ const assignmentSchema = genericSchema({
   status: { type: String, default: 'active' }
 })
 
+const wellnessSchema = new mongoose.Schema({
+  title: { type: String },
+  thumbnail: { type: String },
+  duration: { type: String },
+  category: { type: String },
+  url: { type: String },
+  createdAt: { type: Date, default: Date.now }
+}, { collection: 'wellness' })
+
 const User = mongoose.model('User', userSchema)
 const Membership = mongoose.model('Membership', membershipSchema)
 const MembershipPlan = mongoose.model('MembershipPlan', planSchema)
@@ -98,6 +107,7 @@ const Exercise = mongoose.model('Exercise', exerciseSchema)
 const Progress = mongoose.model('Progress', progressSchema)
 const Payment = mongoose.model('Payment', paymentSchema)
 const TrainerAssignment = mongoose.model('TrainerAssignment', assignmentSchema)
+const Wellness = mongoose.model('Wellness', wellnessSchema)
 
 // Seed initial data (similar to indexedDB seed)
 const seedInitialData = async () => {
@@ -141,6 +151,13 @@ const seedInitialData = async () => {
       { name: 'Running', category: 'Cardio', description: 'Cardiovascular exercise', duration: 30 }
     ])
 
+    // Wellness
+    await Wellness.insertMany([
+      { title: 'Yoga', thumbnail: 'https://example.com/yoga.jpg', duration: '60 minutes', category: 'Yoga', url: 'https://www.youtube.com/watch?v=example' },
+      { title: 'Zumba', thumbnail: 'https://example.com/zumba.jpg', duration: '60 minutes', category: 'Zumba', url: 'https://www.youtube.com/watch?v=example' },
+      { title: 'Pilates', thumbnail: 'https://example.com/pilates.jpg', duration: '60 minutes', category: 'Pilates', url: 'https://www.youtube.com/watch?v=example' }
+    ])
+
     // Example membership for test user (link to first plan)
     if (plans && plans.length) {
       await Membership.create({
@@ -177,7 +194,8 @@ module.exports = {
     Exercise,
     Progress,
     Payment,
-    TrainerAssignment
+    TrainerAssignment,
+    Wellness
   },
   seedInitialData
 }

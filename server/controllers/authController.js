@@ -17,12 +17,43 @@ const login = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: user._id.toString(), role: user.role || 'user' },
+            {
+                id: user._id.toString(),
+                email: user.email,
+                name: user.name,
+                role: user.role || 'user'
+            },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         )
 
-        // Save token to database
+        // Update streak and points
+        const today = new Date();
+        const lastLogin = user.lastLogin ? new Date(user.lastLogin) : null;
+
+        if (lastLogin) {
+            const diffTime = Math.abs(today - lastLogin);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+                // Consecutive day login
+                user.streak = (user.streak || 0) + 1;
+                user.points = (user.points || 0) + 10 + (user.streak * 5); // Bonus for streak
+            } else if (diffDays > 1) {
+                // Streak broken
+                user.streak = 1;
+                user.points = (user.points || 0) + 10;
+            }
+            // If diffDays === 0 (same day), do nothing
+        } else {
+            // First login
+            user.streak = 1;
+            user.points = (user.points || 0) + 50; // Welcome bonus
+        }
+
+        user.lastLogin = today;
+
+        // Save token and stats to database
         user.token = token
         await user.save()
 

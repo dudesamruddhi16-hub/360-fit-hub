@@ -7,6 +7,7 @@ const Exercise = require('./Exercise');
 const Progress = require('./Progress');
 const Payment = require('./Payment');
 const TrainerAssignment = require('./TrainerAssignment');
+const Wellness = require('./wellness');
 
 // Seed initial data (similar to indexedDB seed)
 const seedInitialData = async () => {
@@ -64,7 +65,68 @@ const seedInitialData = async () => {
         // Example trainer assignment
         await TrainerAssignment.create({ userId: user._id, trainerId: trainer._id })
 
-        console.log('SeedInitialData: inserted users, plans, exercises, membership, assignment')
+        // Seed Wellness Videos
+        const videos = [
+            {
+                title: "10-Minute Morning Yoga",
+                thumbnail: "https://img.youtube.com/vi/VaoV1PrYft4/maxresdefault.jpg",
+                duration: "10 min",
+                category: "Flexibility",
+                url: "https://www.youtube.com/embed/VaoV1PrYft4"
+            },
+            {
+                title: "Quick Full Body HIIT",
+                thumbnail: "https://img.youtube.com/vi/ml6cT4AZdqI/maxresdefault.jpg",
+                duration: "15 min",
+                category: "Cardio",
+                url: "https://www.youtube.com/embed/ml6cT4AZdqI"
+            },
+            {
+                title: "Meditation for Stress",
+                thumbnail: "https://img.youtube.com/vi/inpok4MKVLM/maxresdefault.jpg",
+                duration: "5 min",
+                category: "Mental Health",
+                url: "https://www.youtube.com/embed/inpok4MKVLM"
+            }
+        ];
+
+        // Check if videos exist before inserting to avoid duplicates on restart
+        const videoCount = await Wellness.countDocuments();
+        if (videoCount === 0) {
+            await Wellness.insertMany(videos);
+            console.log('Wellness Videos seeded');
+        }
+
+        // Update Exercises with difficulty and muscleGroup
+        const exerciseUpdates = [
+            { name: 'Bench Press', difficulty: 'intermediate', muscleGroup: 'Chest' },
+            { name: 'Squats', difficulty: 'intermediate', muscleGroup: 'Legs' },
+            { name: 'Deadlift', difficulty: 'advanced', muscleGroup: 'Back' },
+            { name: 'Pull-ups', difficulty: 'intermediate', muscleGroup: 'Back' },
+            { name: 'Running', difficulty: 'beginner', muscleGroup: 'Legs' },
+            { name: 'Push-ups', difficulty: 'beginner', muscleGroup: 'Chest' },
+            { name: 'Plank', difficulty: 'beginner', muscleGroup: 'Core' },
+            { name: 'Lunges', difficulty: 'beginner', muscleGroup: 'Legs' }
+        ];
+
+        for (const ex of exerciseUpdates) {
+            await Exercise.updateOne(
+                { name: ex.name },
+                { $set: { difficulty: ex.difficulty, muscleGroup: ex.muscleGroup } },
+                { upsert: true }
+            );
+        }
+        console.log('Exercises updated with new fields');
+
+        // Update Users with random points for leaderboard if not set
+        const usersToUpdate = await User.find({ points: { $exists: false } });
+        for (const u of usersToUpdate) {
+            const points = Math.floor(Math.random() * 5000);
+            await User.updateOne({ _id: u._id }, { $set: { points, streak: Math.floor(Math.random() * 10) } });
+        }
+        if (usersToUpdate.length > 0) console.log('Users updated with points');
+
+        console.log('SeedInitialData: inserted users, plans, exercises, membership, assignment, wellness videos')
     } catch (err) {
         // ignore duplicate key errors during re-seed attempt
         if (err.code === 11000) {
@@ -85,7 +147,9 @@ const models = {
     Exercise,
     Progress,
     Payment,
-    TrainerAssignment
+    TrainerAssignment,
+    Wellness
 };
 
+console.log('DEBUG: Exporting models from index.js:', Object.keys(models));
 module.exports = { models, seedInitialData };

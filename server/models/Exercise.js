@@ -7,6 +7,8 @@ const exerciseSchema = new mongoose.Schema({
     sets: Number,
     reps: Number,
     duration: Number,
+    difficulty: { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'beginner' },
+    muscleGroup: String,
     createdAt: { type: Date, default: Date.now }
 });
 
