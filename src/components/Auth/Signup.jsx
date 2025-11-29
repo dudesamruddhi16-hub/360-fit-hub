@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Card, Form, Button, Alert } from 'react-bootstrap'
+import { Card, Form, Button } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -14,10 +15,9 @@ const Signup = () => {
     weight: '',
     height: ''
   })
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
   const { signup, user } = useAuth()
+  const { addToast } = useToast()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -42,19 +42,17 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
     setLoading(true)
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
+      addToast('Passwords do not match', 'danger')
       setLoading(false)
       return
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long')
+      addToast('Password must be at least 6 characters long', 'danger')
       setLoading(false)
       return
     }
@@ -68,12 +66,12 @@ const Signup = () => {
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
       height: formData.height ? parseInt(formData.height) : undefined
     })
-    
+
     if (result.success) {
-      setSuccess('Account created successfully! Redirecting...')
+      addToast('Account created successfully! Redirecting...', 'success')
       // Navigation will happen in useEffect
     } else {
-      setError(result.error || 'Signup failed')
+      addToast(result.error || 'Signup failed', 'danger')
       setLoading(false)
     }
   }
@@ -88,9 +86,7 @@ const Signup = () => {
         </Card.Header>
         <Card.Body className="auth-card-body">
           <Form onSubmit={handleSubmit}>
-            {error && <Alert variant="danger">{error}</Alert>}
-            {success && <Alert variant="success">{success}</Alert>}
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Full Name <span className="text-danger">*</span></Form.Label>
               <Form.Control
@@ -200,7 +196,7 @@ const Signup = () => {
               {loading ? <><span className="spinner-border spinner-border-sm me-2" role="status"></span>Creating Account...</> : 'Create Account'}
             </Button>
           </Form>
-          
+
           <div className="text-center">
             <p className="mb-0" style={{ color: '#666' }}>
               Already have an account? <Link to="/login" style={{ color: '#D4AF37', fontWeight: '600', textDecoration: 'none' }}>Login here</Link>

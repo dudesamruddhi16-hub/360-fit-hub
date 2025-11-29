@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
-import { Card, Form, Button, Alert } from 'react-bootstrap';
+import { Card, Form, Button } from 'react-bootstrap';
 import { testimonialsService } from '../../services';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 const TestimonialForm = ({ onSubmitSuccess }) => {
     const { user } = useAuth();
+    const { addToast } = useToast();
     const [rating, setRating] = useState(5);
     const [feedback, setFeedback] = useState('');
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-        setSuccess(false);
 
         if (!feedback.trim()) {
-            setError('Please provide your feedback');
+            addToast('Please provide your feedback', 'warning');
             return;
         }
 
@@ -30,7 +28,7 @@ const TestimonialForm = ({ onSubmitSuccess }) => {
                 feedback,
                 isApproved: false
             });
-            setSuccess(true);
+            addToast('Thank you! Your testimonial has been submitted and is pending approval.', 'success');
             setFeedback('');
             setRating(5);
 
@@ -40,8 +38,7 @@ const TestimonialForm = ({ onSubmitSuccess }) => {
             }
         } catch (err) {
             console.error('Testimonial submission error:', err);
-            console.error('Error response:', err.response);
-            setError(err.response?.data?.error || err.message || 'Failed to submit testimonial');
+            addToast(err.response?.data?.error || err.message || 'Failed to submit testimonial', 'danger');
         } finally {
             setLoading(false);
         }
@@ -51,18 +48,6 @@ const TestimonialForm = ({ onSubmitSuccess }) => {
         <Card className="border-0 shadow-sm">
             <Card.Body>
                 <h5 className="mb-4">Share Your Experience</h5>
-
-                {success && (
-                    <Alert variant="success" onClose={() => setSuccess(false)} dismissible>
-                        Thank you! Your testimonial has been submitted and is pending approval.
-                    </Alert>
-                )}
-
-                {error && (
-                    <Alert variant="danger" onClose={() => setError('')} dismissible>
-                        {error}
-                    </Alert>
-                )}
 
                 <Form onSubmit={handleSubmit}>
                     <Form.Group className="mb-3">

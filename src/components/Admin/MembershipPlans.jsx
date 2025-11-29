@@ -62,15 +62,15 @@ const MembershipPlans = () => {
       if (editingPlan) {
         const planId = editingPlan.id || editingPlan._id
         await membershipPlansService.update(planId, planData)
-        showAlert('Plan updated successfully')
+        addToast('Plan updated successfully')
       } else {
         await membershipPlansService.create(planData)
-        showAlert('Plan added successfully')
+        addToast('Plan added successfully')
       }
       setShowModal(false)
       loadPlans()
     } catch (error) {
-      showAlert('Error saving plan', 'danger')
+      addToast('Error saving plan', 'danger')
     }
   }
 
@@ -78,10 +78,10 @@ const MembershipPlans = () => {
     if (window.confirm('Are you sure you want to delete this plan?')) {
       try {
         await membershipPlansService.delete(id)
-        showAlert('Plan deleted successfully')
+        addToast('Plan deleted successfully')
         loadPlans()
       } catch (error) {
-        showAlert('Error deleting plan', 'danger')
+        addToast('Error deleting plan', 'danger')
       }
     }
   }

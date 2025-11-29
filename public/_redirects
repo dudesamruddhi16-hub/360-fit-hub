@@ -1,0 +1,7 @@
+# Render Configuration for SPA Routing
+
+# Redirects - Handle client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

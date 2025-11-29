@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap'
+import { Card, Table, Button, Modal, Form } from 'react-bootstrap'
 import { usersService } from '../../services'
 import { normalizeItem } from '../../utils/helpers'
+import { useToast } from '../../context/ToastContext'
 
 const TrainersManagement = () => {
   const [trainers, setTrainers] = useState([])
+  const { addToast } = useToast()
   const [showModal, setShowModal] = useState(false)
   const [editingTrainer, setEditingTrainer] = useState(null)
   const [formData, setFormData] = useState({
@@ -15,7 +17,6 @@ const TrainersManagement = () => {
     specialization: '',
     experience: ''
   })
-  const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' })
 
   useEffect(() => {
     loadTrainers()
@@ -28,14 +29,11 @@ const TrainersManagement = () => {
       const trainerUsers = normalizedUsers.filter(u => u.role === 'trainer')
       setTrainers(trainerUsers)
     } catch (error) {
-      showAlert('Error loading trainers', 'danger')
+      addToast('Error loading trainers', 'danger')
     }
   }
 
-  const showAlert = (message, variant = 'success') => {
-    setAlert({ show: true, message, variant })
-    setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000)
-  }
+
 
   const handleAdd = () => {
     setEditingTrainer(null)
@@ -65,11 +63,11 @@ const TrainersManagement = () => {
           delete updated.password
         }
         await usersService.update(trainerId, updated)
-        showAlert('Trainer updated successfully')
+        addToast('Trainer updated successfully')
       } else {
         const existing = await usersService.query('email', formData.email)
         if (existing.length > 0) {
-          showAlert('Email already exists', 'danger')
+          addToast('Email already exists', 'danger')
           return
         }
         await usersService.create({
@@ -77,12 +75,12 @@ const TrainersManagement = () => {
           role: 'trainer',
           createdAt: new Date().toISOString()
         })
-        showAlert('Trainer added successfully')
+        addToast('Trainer added successfully')
       }
       setShowModal(false)
       loadTrainers()
     } catch (error) {
-      showAlert('Error saving trainer', 'danger')
+      addToast('Error saving trainer', 'danger')
     }
   }
 
@@ -90,10 +88,10 @@ const TrainersManagement = () => {
     if (window.confirm('Are you sure you want to delete this trainer?')) {
       try {
         await usersService.delete(id)
-        showAlert('Trainer deleted successfully')
+        addToast('Trainer deleted successfully')
         loadTrainers()
       } catch (error) {
-        showAlert('Error deleting trainer', 'danger')
+        addToast('Error deleting trainer', 'danger')
       }
     }
   }
@@ -108,7 +106,6 @@ const TrainersManagement = () => {
           </Button>
         </Card.Header>
         <Card.Body>
-          {alert.show && <Alert variant={alert.variant}>{alert.message}</Alert>}
           <Table striped bordered hover>
             <thead>
               <tr>

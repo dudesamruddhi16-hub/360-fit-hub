@@ -1,13 +1,8 @@
-import React, { useState, useEffect } from 'react'
-import { Card, Table, Button, Modal, Form, Alert, Badge } from 'react-bootstrap'
-import { useAuth } from '../../context/AuthContext'
-import { useNavigate } from 'react-router-dom'
-import { paymentsService, membershipsService, membershipPlansService } from '../../services'
-import { normalizeItem } from '../../utils/helpers'
 
 const Payment = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const [payments, setPayments] = useState([])
   const [pendingMemberships, setPendingMemberships] = useState([])
   const [showModal, setShowModal] = useState(false)
@@ -22,7 +17,6 @@ const Payment = () => {
   })
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [transactionDetails, setTransactionDetails] = useState(null)
-  const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' })
 
   useEffect(() => {
     loadData()
@@ -39,11 +33,11 @@ const Payment = () => {
 
       const memberships = await membershipsService.query('userId', userId)
       const normalizedMemberships = normalizeItem(memberships)
-      
+
       // Get all plans to fetch price if missing from membership
       const allPlans = await membershipPlansService.getAll()
       const normalizedPlans = normalizeItem(allPlans)
-      
+
       // Get memberships that are pending payment (status: 'pending' and no payment record)
       const pending = normalizedMemberships
         .filter(m => {
@@ -80,17 +74,14 @@ const Payment = () => {
           }
           return m
         })
-      
+
       setPendingMemberships(pending)
     } catch (error) {
       console.error('Error loading data:', error)
     }
   }
 
-  const showAlert = (message, variant = 'success') => {
-    setAlert({ show: true, message, variant })
-    setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000)
-  }
+
 
   const handlePay = (membership) => {
     setSelectedMembership(membership)
@@ -139,7 +130,7 @@ const Payment = () => {
   const handlePaymentSubmit = async () => {
     if (paymentMethod === 'cards') {
       if (!paymentData.cardNumber || !paymentData.cardName || !paymentData.expiryDate || !paymentData.cvv) {
-        showAlert('Please fill in all payment details', 'warning')
+        addToast('Please fill in all payment details', 'warning')
         return
       }
     }
@@ -197,7 +188,7 @@ const Payment = () => {
       setShowSuccessModal(true)
       loadData()
     } catch (error) {
-      showAlert('Payment failed. Please try again.', 'danger')
+      addToast('Payment failed. Please try again.', 'danger')
     }
   }
 
@@ -217,48 +208,47 @@ const Payment = () => {
           <h4 className="mb-0">Pending Payments</h4>
         </Card.Header>
         <Card.Body>
-          {alert.show && <Alert variant={alert.variant}>{alert.message}</Alert>}
           {pendingMemberships.length === 0 ? (
             <p className="text-muted">No pending payments</p>
           ) : (
             <div className="table-responsive">
               <Table striped bordered hover>
-              <thead>
-                <tr>
-                  <th>Plan</th>
-                  <th>Amount</th>
-                  <th>Start Date</th>
-                  <th>End Date</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingMemberships.map(membership => (
-                  <tr key={membership.id}>
-                    <td>
-                      <strong>{membership.planName}</strong>
-                      <Badge bg="warning" className="ms-2">Pending Payment</Badge>
-                    </td>
-                    <td>
-                      {membership.price !== undefined && membership.price !== null 
-                        ? `₹${Number(membership.price).toFixed(2)}` 
-                        : '₹0.00'}
-                    </td>
-                    <td>
-                      {membership.startDate ? new Date(membership.startDate).toLocaleDateString() : 'After Payment'}
-                    </td>
-                    <td>
-                      {membership.endDate ? new Date(membership.endDate).toLocaleDateString() : 'After Payment'}
-                    </td>
-                    <td>
-                      <Button variant="primary" size="sm" onClick={() => handlePay(membership)}>
-                        <i className="bi bi-credit-card"></i> Pay Now
-                      </Button>
-                    </td>
+                <thead>
+                  <tr>
+                    <th>Plan</th>
+                    <th>Amount</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {pendingMemberships.map(membership => (
+                    <tr key={membership.id}>
+                      <td>
+                        <strong>{membership.planName}</strong>
+                        <Badge bg="warning" className="ms-2">Pending Payment</Badge>
+                      </td>
+                      <td>
+                        {membership.price !== undefined && membership.price !== null
+                          ? `₹${Number(membership.price).toFixed(2)}`
+                          : '₹0.00'}
+                      </td>
+                      <td>
+                        {membership.startDate ? new Date(membership.startDate).toLocaleDateString() : 'After Payment'}
+                      </td>
+                      <td>
+                        {membership.endDate ? new Date(membership.endDate).toLocaleDateString() : 'After Payment'}
+                      </td>
+                      <td>
+                        <Button variant="primary" size="sm" onClick={() => handlePay(membership)}>
+                          <i className="bi bi-credit-card"></i> Pay Now
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
             </div>
           )}
         </Card.Body>
@@ -274,41 +264,41 @@ const Payment = () => {
           ) : (
             <div className="table-responsive">
               <Table striped bordered hover>
-              <thead>
-                <tr>
-                  <th>Transaction ID</th>
-                  <th>Plan</th>
-                  <th>Amount</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th>Method</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.map(payment => (
-                  <tr key={payment.id}>
-                    <td>#{payment.transactionId || payment.id}</td>
-                    <td>{payment.planName || '-'}</td>
-                    <td>
-                      {payment.amount !== undefined && payment.amount !== null 
-                        ? `₹${Number(payment.amount).toFixed(2)}` 
-                        : '₹0.00'}
-                    </td>
-                    <td>{new Date(payment.date).toLocaleDateString()}</td>
-                    <td>{getStatusBadge(payment.status || 'completed')}</td>
-                    <td>{payment.method || 'Online'}</td>
+                <thead>
+                  <tr>
+                    <th>Transaction ID</th>
+                    <th>Plan</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Method</th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {payments.map(payment => (
+                    <tr key={payment.id}>
+                      <td>#{payment.transactionId || payment.id}</td>
+                      <td>{payment.planName || '-'}</td>
+                      <td>
+                        {payment.amount !== undefined && payment.amount !== null
+                          ? `₹${Number(payment.amount).toFixed(2)}`
+                          : '₹0.00'}
+                      </td>
+                      <td>{new Date(payment.date).toLocaleDateString()}</td>
+                      <td>{getStatusBadge(payment.status || 'completed')}</td>
+                      <td>{payment.method || 'Online'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
             </div>
           )}
         </Card.Body>
       </Card>
 
       {/* Payment Modal */}
-      <Modal 
-        show={showModal} 
+      <Modal
+        show={showModal}
         onHide={() => setShowModal(false)}
         size="lg"
         centered
@@ -337,8 +327,8 @@ const Payment = () => {
                   </div>
                   <div className="text-end">
                     <h5 className="mb-0 text-primary">
-                      {selectedMembership.price !== undefined && selectedMembership.price !== null 
-                        ? `₹${Number(selectedMembership.price).toFixed(2)}` 
+                      {selectedMembership.price !== undefined && selectedMembership.price !== null
+                        ? `₹${Number(selectedMembership.price).toFixed(2)}`
                         : '₹0.00'}
                     </h5>
                   </div>
@@ -363,7 +353,7 @@ const Payment = () => {
                     </div>
                   }
                 />
-                
+
                 {paymentMethod === 'cards' && (
                   <div className="payment-form">
                     <Form.Group className="mb-3">
@@ -539,8 +529,8 @@ const Payment = () => {
                 Cancel
               </Button>
               <Button variant="primary" onClick={handlePaymentSubmit} className="payment-submit-btn">
-                Pay {selectedMembership?.price !== undefined && selectedMembership?.price !== null 
-                  ? `$${Number(selectedMembership.price).toFixed(2)}` 
+                Pay {selectedMembership?.price !== undefined && selectedMembership?.price !== null
+                  ? `$${Number(selectedMembership.price).toFixed(2)}`
                   : '$0.00'}
               </Button>
             </div>
@@ -549,8 +539,8 @@ const Payment = () => {
       </Modal>
 
       {/* Success Modal */}
-      <Modal 
-        show={showSuccessModal} 
+      <Modal
+        show={showSuccessModal}
         onHide={() => setShowSuccessModal(false)}
         centered
         className="payment-success-modal"
