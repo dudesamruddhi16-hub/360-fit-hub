@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    allowedHosts: ["https://three60-fit-hub-satara.onrender.com/"],
+    allowedHosts: 'all', // Allow all hosts
   },
   resolve: {
     alias: {

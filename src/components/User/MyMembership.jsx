@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Button, Modal, Form, Alert, Badge } from 'react-bootstrap'
+import { Card, Table, Button, Modal, Form, Badge } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
 import { membershipsService, membershipPlansService } from '../../services'
 import { normalizeItem } from '../../utils/helpers'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '../../context/ToastContext'
 
 const MyMembership = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const [membership, setMembership] = useState(null)
   const [plans, setPlans] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState('')
-  const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' })
 
   useEffect(() => {
     if (user?.id) {
@@ -30,23 +31,23 @@ const MyMembership = () => {
 
       const memberships = await membershipsService.query('userId', userId)
       const normalized = normalizeItem(memberships)
-      
+
       // Get all plans to fetch price if missing from membership
       const allPlans = await membershipPlansService.getAll()
       const normalizedPlans = normalizeItem(allPlans)
-      
+
       // Only show active memberships (status: 'active' and not expired)
       let activeMembership = normalized.find(m => {
         if (m.status !== 'active') return false
         if (!m.endDate) return false
         return new Date(m.endDate) > new Date()
       })
-      
+
       // If no active membership, show pending membership
       if (!activeMembership) {
         activeMembership = normalized.find(m => m.status === 'pending')
       }
-      
+
       // If price is missing, fetch it from the plan
       if (activeMembership && (!activeMembership.price || activeMembership.price === 0) && activeMembership.planId) {
         const plan = normalizedPlans.find(p => {
@@ -59,23 +60,20 @@ const MyMembership = () => {
           activeMembership.planName = activeMembership.planName || plan.name
         }
       }
-      
+
       setMembership(activeMembership)
       setPlans(normalizedPlans)
     } catch (error) {
       console.error('Error loading data:', error)
-      showAlert('Error loading membership data', 'danger')
+      addToast('Error loading membership data', 'danger')
     }
   }
 
-  const showAlert = (message, variant = 'success') => {
-    setAlert({ show: true, message, variant })
-    setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000)
-  }
+
 
   const handleSubscribe = async () => {
     if (!selectedPlan) {
-      showAlert('Please select a plan', 'warning')
+      addToast('Please select a plan', 'warning')
       return
     }
 
@@ -86,9 +84,9 @@ const MyMembership = () => {
         const selectedId = selectedPlan
         return String(planId) === String(selectedId) || planId === selectedId
       })
-      
+
       if (!plan) {
-        showAlert('Plan not found', 'danger')
+        addToast('Plan not found', 'danger')
         return
       }
 
@@ -97,7 +95,7 @@ const MyMembership = () => {
       const userId = user.id || user._id
 
       if (!userId) {
-        showAlert('User ID not found. Please login again.', 'danger')
+        addToast('User ID not found. Please login again.', 'danger')
         return
       }
 
@@ -115,7 +113,7 @@ const MyMembership = () => {
 
       await membershipsService.create(membershipData)
 
-      showAlert('Plan selected! Please complete payment to activate your membership.')
+      addToast('Plan selected! Please complete payment to activate your membership.', 'success')
       setShowModal(false)
       setSelectedPlan('')
       // Redirect to payment page
@@ -126,7 +124,7 @@ const MyMembership = () => {
     } catch (error) {
       console.error('Subscription error:', error)
       const errorMessage = error.message || 'Error subscribing to plan'
-      showAlert(errorMessage, 'danger')
+      addToast(errorMessage, 'danger')
     }
   }
 
@@ -142,7 +140,6 @@ const MyMembership = () => {
           <h4 className="mb-0">My Membership</h4>
         </Card.Header>
         <Card.Body>
-          {alert.show && <Alert variant={alert.variant}>{alert.message}</Alert>}
           {membership ? (
             <div>
               <Table striped bordered>
@@ -162,24 +159,24 @@ const MyMembership = () => {
                   <tr>
                     <th>Start Date</th>
                     <td>
-                      {membership.startDate 
-                        ? new Date(membership.startDate).toLocaleDateString() 
+                      {membership.startDate
+                        ? new Date(membership.startDate).toLocaleDateString()
                         : <span className="text-muted">Will be set after payment</span>}
                     </td>
                   </tr>
                   <tr>
                     <th>End Date</th>
                     <td>
-                      {membership.endDate 
-                        ? new Date(membership.endDate).toLocaleDateString() 
+                      {membership.endDate
+                        ? new Date(membership.endDate).toLocaleDateString()
                         : <span className="text-muted">Will be set after payment</span>}
                     </td>
                   </tr>
                   <tr>
                     <th>Price</th>
                     <td>
-                      {membership.price !== undefined && membership.price !== null 
-                        ? `₹${Number(membership.price).toFixed(2)}` 
+                      {membership.price !== undefined && membership.price !== null
+                        ? `₹${Number(membership.price).toFixed(2)}`
                         : '₹0.00'}
                     </td>
                   </tr>
@@ -193,8 +190,8 @@ const MyMembership = () => {
                 <i className="bi bi-plus-circle"></i> Subscribe to a Plan
               </Button>
               <div className="mt-3">
-                <Button 
-                  variant="outline-primary" 
+                <Button
+                  variant="outline-primary"
                   onClick={() => navigate('/user/payment')}
                 >
                   <i className="bi bi-credit-card"></i> Check Pending Payments
@@ -219,8 +216,8 @@ const MyMembership = () => {
                     <Card.Header className="text-center">
                       <h5>{plan.name}</h5>
                       <h3 className="text-primary">
-                        {plan.price !== undefined && plan.price !== null 
-                          ? `₹${Number(plan.price).toFixed(2)}` 
+                        {plan.price !== undefined && plan.price !== null
+                          ? `₹${Number(plan.price).toFixed(2)}`
                           : '₹0.00'}
                       </h3>
                       <small className="text-muted">per {plan.duration} days</small>

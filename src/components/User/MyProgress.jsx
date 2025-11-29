@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap'
+import { Card, Table, Button, Modal, Form } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
 import { progressService } from '../../services'
 import { normalizeItem } from '../../utils/helpers'
-import MyProgressGraph from './MyProgressGraph' 
+import MyProgressGraph from './MyProgressGraph'
+import { useToast } from '../../context/ToastContext'
 
 const MyProgress = () => {
   const { user } = useAuth()
+  const { addToast } = useToast()
   const [progress, setProgress] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [formData, setFormData] = useState({
@@ -16,7 +18,6 @@ const MyProgress = () => {
     muscleMass: '',
     notes: ''
   })
-  const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' })
 
   useEffect(() => {
     loadProgress()
@@ -32,10 +33,7 @@ const MyProgress = () => {
     }
   }
 
-  const showAlert = (message, variant = 'success') => {
-    setAlert({ show: true, message, variant })
-    setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000)
-  }
+
 
   const handleAdd = () => {
     setFormData({
@@ -59,11 +57,11 @@ const MyProgress = () => {
         notes: formData.notes,
         createdAt: new Date().toISOString()
       })
-      showAlert('Progress entry added successfully')
+      addToast('Progress entry added successfully', 'success')
       setShowModal(false)
       loadProgress()
     } catch (error) {
-      showAlert('Error saving progress', 'danger')
+      addToast('Error saving progress', 'danger')
     }
   }
 
@@ -88,7 +86,6 @@ const MyProgress = () => {
           </Button>
         </Card.Header>
         <Card.Body>
-          {alert.show && <Alert variant={alert.variant}>{alert.message}</Alert>}
           {progress.length === 0 ? (
             <div className="text-center py-5">
               <p className="text-muted">No progress entries yet. Start tracking your fitness journey!</p>
@@ -120,19 +117,19 @@ const MyProgress = () => {
         </Card.Body>
       </Card>
       <Card>
-      <Card.Header>
-        <div className="d-flex justify-content-between align-items-center">
-          <h5 className="mb-0">Progress Tracking</h5>
-          <small className="text-muted">{userId ? 'Your progress overview' : 'Not signed in'}</small>
-        </div>
-      </Card.Header>
-      <Card.Body>
-        {userId
-          ? <MyProgressGraph userId={userId} />
-          : <div>Please sign in to view your progress.</div>
-        }
-      </Card.Body>
-    </Card>
+        <Card.Header>
+          <div className="d-flex justify-content-between align-items-center">
+            <h5 className="mb-0">Progress Tracking</h5>
+            <small className="text-muted">{userId ? 'Your progress overview' : 'Not signed in'}</small>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          {userId
+            ? <MyProgressGraph userId={userId} />
+            : <div>Please sign in to view your progress.</div>
+          }
+        </Card.Body>
+      </Card>
 
       <Modal show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>

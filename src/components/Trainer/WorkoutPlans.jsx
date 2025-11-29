@@ -69,11 +69,11 @@ const WorkoutPlans = () => {
     try {
       // basic validation
       if (!formData.userId) {
-        showAlert('Please select a client', 'danger')
+        addToast('Please select a client', 'danger')
         return
       }
       if (!formData.name) {
-        showAlert('Please enter a plan name', 'danger')
+        addToast('Please enter a plan name', 'danger')
         return
       }
 
@@ -94,17 +94,17 @@ const WorkoutPlans = () => {
       if (editingWorkout) {
         const workoutId = editingWorkout.id || editingWorkout._id
         await workoutPlansService.update(workoutId, workoutData)
-        showAlert('Workout plan updated successfully')
+        addToast('Workout plan updated successfully')
       } else {
         await workoutPlansService.create(workoutData)
-        showAlert('Workout plan created successfully')
+        addToast('Workout plan created successfully')
       }
 
       setShowModal(false)
       loadData()
     } catch (error) {
       console.error('Error saving workout plan:', error)
-      showAlert('Error saving workout plan', 'danger')
+      addToast('Error saving workout plan', 'danger')
     }
   }
 
@@ -112,10 +112,10 @@ const WorkoutPlans = () => {
     if (window.confirm('Are you sure you want to delete this workout plan?')) {
       try {
         await workoutPlansService.delete(id)
-        showAlert('Workout plan deleted successfully')
+        addToast('Workout plan deleted successfully')
         loadData()
       } catch (error) {
-        showAlert('Error deleting workout plan', 'danger')
+        addToast('Error deleting workout plan', 'danger')
       }
     }
   }

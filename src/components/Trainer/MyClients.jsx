@@ -52,7 +52,7 @@ const MyClients = () => {
 
   const handleAssign = async () => {
     if (!selectedUserId) {
-      showAlert('Please select a user', 'danger')
+      addToast('Please select a user', 'danger')
       return
     }
 
@@ -62,7 +62,7 @@ const MyClients = () => {
       const normalized = normalizeItem(existing)
       // Compare IDs as strings (assignment.userId may be ObjectId/string)
       if (normalized.some(a => String(a.userId) === String(selectedUserId))) {
-        showAlert('User is already assigned to you', 'warning')
+        addToast('User is already assigned to you', 'warning')
         return
       }
 
@@ -73,12 +73,12 @@ const MyClients = () => {
         assignedDate: new Date().toISOString()
       })
 
-      showAlert('Client assigned successfully')
+      addToast('Client assigned successfully')
       setShowModal(false)
       setSelectedUserId('')
       loadClients()
     } catch (error) {
-      showAlert('Error assigning client', 'danger')
+      addToast('Error assigning client', 'danger')
     }
   }
 

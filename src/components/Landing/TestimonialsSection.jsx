@@ -1,26 +1,27 @@
-import React from 'react'
-import { Container, Row, Col, Card, Badge } from 'react-bootstrap'
-import { testimonialsService } from '../../services'
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Card, Badge } from 'react-bootstrap';
+import { testimonialsService } from '../../services';
+import { SkeletonCard } from '../Common/Skeleton';
 
 const TestimonialsSection = () => {
-  const [testimonials, setTestimonials] = React.useState([])
-  const [loading, setLoading] = React.useState(true)
+  const [testimonials, setTestimonials] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchTestimonials = async () => {
       try {
-        setLoading(true)
-        const data = await testimonialsService.getAll()
-        setTestimonials(data)
+        setLoading(true);
+        const data = await testimonialsService.getAll();
+        setTestimonials(data);
       } catch (error) {
-        console.error('Error fetching testimonials:', error)
+        console.error('Error fetching testimonials:', error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchTestimonials()
-  }, [])
+    fetchTestimonials();
+  }, []);
 
   return (
     <section id="testimonials" className="testimonials-section">
@@ -29,14 +30,24 @@ const TestimonialsSection = () => {
           <h2>Testimonials</h2>
           <p>See what our members have to say about their experience</p>
         </div>
-        {loading ? (
-          <div className="text-center">
-            <p>Loading testimonials...</p>
-          </div>
-        ) : (
-          <Row className="g-4">
-            {testimonials.map((testimonial) => (
-              <Col md={4} key={testimonial._id}>
+        <Row className="g-4">
+          {loading ? (
+            <>
+              <Col md={4}><SkeletonCard /></Col>
+              <Col md={4}><SkeletonCard /></Col>
+              <Col md={4}><SkeletonCard /></Col>
+            </>
+          ) : testimonials.length === 0 ? (
+            <Col>
+              <div className="empty-state">
+                <i className="bi bi-chat-heart empty-state-icon text-primary"></i>
+                <div className="empty-state-title">No Testimonials Yet</div>
+                <p className="empty-state-text">Be the first to share your experience!</p>
+              </div>
+            </Col>
+          ) : (
+            testimonials.map((testimonial, index) => (
+              <Col md={4} key={testimonial._id} className="mb-4 fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
                 <Card className="testimonial-card h-100">
                   <Card.Body>
                     <div className="testimonial-rating mb-2">
@@ -54,13 +65,12 @@ const TestimonialsSection = () => {
                   </Card.Body>
                 </Card>
               </Col>
-            ))}
-          </Row>
-        )}
+            ))
+          )}
+        </Row>
       </Container>
     </section>
-  )
-}
+  );
+};
 
-export default TestimonialsSection
-
+export default TestimonialsSection;

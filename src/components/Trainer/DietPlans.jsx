@@ -76,15 +76,15 @@ const DietPlans = () => {
       if (editingDiet) {
         const dietId = editingDiet.id || editingDiet._id
         await dietPlansService.update(dietId, dietData)
-        showAlert('Diet plan updated successfully')
+        addToast('Diet plan updated successfully')
       } else {
         await dietPlansService.create(dietData)
-        showAlert('Diet plan created successfully')
+        addToast('Diet plan created successfully')
       }
       setShowModal(false)
       loadData()
     } catch (error) {
-      showAlert('Error saving diet plan', 'danger')
+      addToast('Error saving diet plan', 'danger')
     }
   }
 
@@ -92,10 +92,10 @@ const DietPlans = () => {
     if (window.confirm('Are you sure you want to delete this diet plan?')) {
       try {
         await dietPlansService.delete(id)
-        showAlert('Diet plan deleted successfully')
+        addToast('Diet plan deleted successfully')
         loadData()
       } catch (error) {
-        showAlert('Error deleting diet plan', 'danger')
+        addToast('Error deleting diet plan', 'danger')
       }
     }
   }

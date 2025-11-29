@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Badge, Alert } from 'react-bootstrap';
+import { Card, Table, Button, Badge } from 'react-bootstrap';
 import { testimonialsService } from '../../services';
+import { useToast } from '../../context/ToastContext';
+import { SkeletonTable } from '../Common/Skeleton';
 
 const TestimonialApproval = () => {
     const [testimonials, setTestimonials] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [message, setMessage] = useState({ type: '', text: '' });
+    const { addToast } = useToast();
 
     useEffect(() => {
         loadPendingTestimonials();
@@ -18,7 +20,7 @@ const TestimonialApproval = () => {
             setTestimonials(data);
         } catch (error) {
             console.error('Error loading pending testimonials:', error);
-            setMessage({ type: 'danger', text: 'Failed to load testimonials' });
+            addToast('Failed to load testimonials', 'danger');
         } finally {
             setLoading(false);
         }
@@ -27,10 +29,10 @@ const TestimonialApproval = () => {
     const handleApprove = async (id) => {
         try {
             await testimonialsService.approve(id);
-            setMessage({ type: 'success', text: 'Testimonial approved successfully!' });
+            addToast('Testimonial approved successfully!', 'success');
             loadPendingTestimonials();
         } catch (error) {
-            setMessage({ type: 'danger', text: 'Failed to approve testimonial' });
+            addToast('Failed to approve testimonial', 'danger');
         }
     };
 
@@ -40,10 +42,10 @@ const TestimonialApproval = () => {
         }
         try {
             await testimonialsService.reject(id);
-            setMessage({ type: 'warning', text: 'Testimonial rejected and deleted' });
+            addToast('Testimonial rejected and deleted', 'warning');
             loadPendingTestimonials();
         } catch (error) {
-            setMessage({ type: 'danger', text: 'Failed to reject testimonial' });
+            addToast('Failed to reject testimonial', 'danger');
         }
     };
 
@@ -61,29 +63,16 @@ const TestimonialApproval = () => {
                 </h5>
             </Card.Header>
             <Card.Body>
-                {message.text && (
-                    <Alert
-                        variant={message.type}
-                        dismissible
-                        onClose={() => setMessage({ type: '', text: '' })}
-                    >
-                        {message.text}
-                    </Alert>
-                )}
-
                 {loading ? (
-                    <div className="text-center py-4">
-                        <div className="spinner-border text-primary" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+                    <SkeletonTable rows={3} />
                 ) : testimonials.length === 0 ? (
-                    <div className="text-center text-muted py-4">
-                        <i className="bi bi-check-circle display-1"></i>
-                        <p className="mt-3">No pending testimonials to review</p>
+                    <div className="empty-state">
+                        <i className="bi bi-check-circle empty-state-icon text-success"></i>
+                        <div className="empty-state-title">All Clear!</div>
+                        <p className="empty-state-text">No pending testimonials to review at the moment.</p>
                     </div>
                 ) : (
-                    <Table responsive hover>
+                    <Table responsive hover className="fade-in-up">
                         <thead>
                             <tr>
                                 <th>User</th>

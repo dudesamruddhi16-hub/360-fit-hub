@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Table, Button, Modal, Form, Alert } from 'react-bootstrap'
+import { Card, Table, Button, Modal, Form } from 'react-bootstrap'
 import { usersService } from '../../services'
 import { normalizeItem } from '../../utils/helpers'
+import { useToast } from '../../context/ToastContext'
 
 const MembersManagement = () => {
   const [members, setMembers] = useState([])
+  const { addToast } = useToast()
   const [showModal, setShowModal] = useState(false)
   const [editingMember, setEditingMember] = useState(null)
   const [formData, setFormData] = useState({
@@ -16,7 +18,6 @@ const MembersManagement = () => {
     weight: '',
     height: ''
   })
-  const [alert, setAlert] = useState({ show: false, message: '', variant: 'success' })
 
   useEffect(() => {
     loadMembers()
@@ -33,10 +34,7 @@ const MembersManagement = () => {
     }
   }
 
-  const showAlert = (message, variant = 'success') => {
-    setAlert({ show: true, message, variant })
-    setTimeout(() => setAlert({ show: false, message: '', variant: 'success' }), 3000)
-  }
+
 
   const handleAdd = () => {
     setEditingMember(null)
@@ -72,12 +70,12 @@ const MembersManagement = () => {
           delete updated.password
         }
         await usersService.update(memberId, updated)
-        showAlert('Member updated successfully')
+        addToast('Member updated successfully')
       } else {
         // Check if email already exists
         const existing = await usersService.query('email', formData.email)
         if (existing.length > 0) {
-          showAlert('Email already exists', 'danger')
+          addToast('Email already exists', 'danger')
           return
         }
         await usersService.create({
@@ -88,7 +86,7 @@ const MembersManagement = () => {
           height: formData.height ? parseInt(formData.height) : undefined,
           createdAt: new Date().toISOString()
         })
-        showAlert('Member added successfully')
+        addToast('Member added successfully')
       }
       setShowModal(false)
       loadMembers()
@@ -101,10 +99,10 @@ const MembersManagement = () => {
     if (window.confirm('Are you sure you want to delete this member?')) {
       try {
         await usersService.delete(id)
-        showAlert('Member deleted successfully')
+        addToast('Member deleted successfully')
         loadMembers()
       } catch (error) {
-        showAlert('Error deleting member', 'danger')
+        addToast('Error deleting member', 'danger')
       }
     }
   }
@@ -119,41 +117,40 @@ const MembersManagement = () => {
           </Button>
         </Card.Header>
         <Card.Body>
-          {alert.show && <Alert variant={alert.variant}>{alert.message}</Alert>}
           <div className="table-responsive">
             <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Age</th>
-                <th>Weight (kg)</th>
-                <th>Height (cm)</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map(member => (
-                <tr key={member.id}>
-                  <td>{member.name}</td>
-                  <td>{member.email}</td>
-                  <td>{member.phone || '-'}</td>
-                  <td>{member.age || '-'}</td>
-                  <td>{member.weight || '-'}</td>
-                  <td>{member.height || '-'}</td>
-                  <td>
-                    <Button variant="info" size="sm" className="me-2" onClick={() => handleEdit(member)}>
-                      <i className="bi bi-pencil"></i>
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDelete(member.id)}>
-                      <i className="bi bi-trash"></i>
-                    </Button>
-                  </td>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Age</th>
+                  <th>Weight (kg)</th>
+                  <th>Height (cm)</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {members.map(member => (
+                  <tr key={member.id}>
+                    <td>{member.name}</td>
+                    <td>{member.email}</td>
+                    <td>{member.phone || '-'}</td>
+                    <td>{member.age || '-'}</td>
+                    <td>{member.weight || '-'}</td>
+                    <td>{member.height || '-'}</td>
+                    <td>
+                      <Button variant="info" size="sm" className="me-2" onClick={() => handleEdit(member)}>
+                        <i className="bi bi-pencil"></i>
+                      </Button>
+                      <Button variant="danger" size="sm" onClick={() => handleDelete(member.id)}>
+                        <i className="bi bi-trash"></i>
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           </div>
         </Card.Body>
       </Card>

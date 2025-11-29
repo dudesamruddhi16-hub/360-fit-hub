@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Container, Card, Form, Button, Alert } from 'react-bootstrap'
+import { Container, Card, Form, Button } from 'react-bootstrap'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login, user } = useAuth()
+  const { addToast } = useToast()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -26,15 +27,14 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
 
     const result = await login(email, password)
-    
+
     if (result.success) {
       // Navigation will happen in useEffect
     } else {
-      setError(result.error || 'Login failed')
+      addToast(result.error || 'Login failed', 'danger')
       setLoading(false)
     }
   }
@@ -49,7 +49,6 @@ const Login = () => {
         </Card.Header>
         <Card.Body className="auth-card-body">
           <Form onSubmit={handleSubmit}>
-            {error && <Alert variant="danger">{error}</Alert>}
             <Form.Group className="mb-4">
               <Form.Label>Email Address</Form.Label>
               <Form.Control
