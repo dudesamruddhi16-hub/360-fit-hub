@@ -6,6 +6,12 @@ import { membershipsService, trainerAssignmentsService, workoutPlansService, die
 import { normalizeItem } from '../../utils/helpers'
 import VideoCall from '../VideoCall/VideoCall'
 
+import StreakCounter from './StreakCounter'
+import LeaderboardPreview from './LeaderboardPreview'
+import AIWorkoutGenerator from './AIWorkoutGenerator'
+import TestimonialForm from './TestimonialForm'
+import { testimonialsService } from '../../services'
+
 const UserHome = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -18,11 +24,13 @@ const UserHome = () => {
   })
   const [trainer, setTrainer] = useState(null)
   const [videoCall, setVideoCall] = useState({ show: false, roomId: '', trainerName: '' })
+  const [myTestimonials, setMyTestimonials] = useState([])
 
   useEffect(() => {
     if (user?.id) {
       loadStats()
       loadTrainer()
+      loadMyTestimonials()
     }
   }, [user])
 
@@ -79,15 +87,54 @@ const UserHome = () => {
     }
   }
 
+  const loadMyTestimonials = async () => {
+    try {
+      const testimonials = await testimonialsService.getMyTestimonials()
+      setMyTestimonials(testimonials)
+    } catch (error) {
+      console.error('Error loading testimonials:', error)
+    }
+  }
+
   return (
     <div>
-      <div className="hero-section">
+      <div className="hero-section mb-4">
         <h1>Welcome, {user?.name}!</h1>
         <p>Your fitness journey starts here</p>
       </div>
+
+      <Row className="mb-4">
+        <Col md={4}>
+          <StreakCounter />
+        </Col>
+        <Col md={4}>
+          <LeaderboardPreview />
+        </Col>
+        <Col md={4}>
+          <Card className="h-100 shadow-sm border-0">
+            <Card.Body className="d-flex flex-column justify-content-center align-items-center text-center">
+              <h5 className="mb-3">Quick Actions</h5>
+              <Button variant="outline-primary" className="mb-2 w-100" onClick={() => navigate('/user/workouts')}>
+                <i className="bi bi-activity me-2"></i>View Workouts
+              </Button>
+              <Button variant="outline-success" className="w-100" onClick={() => navigate('/user/diet')}>
+                <i className="bi bi-egg-fried me-2"></i>View Diet Plan
+              </Button>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row className="mb-4">
+        <Col md={12}>
+          <AIWorkoutGenerator />
+        </Col>
+      </Row>
+
+      <h4 className="mb-3">Your Status</h4>
       <Row>
-        <Col md={6}>
-          <Card>
+        <Col md={6} className="mb-3">
+          <Card className="h-100">
             <Card.Header>
               <h5 className="mb-0">Membership Status</h5>
             </Card.Header>
@@ -105,56 +152,8 @@ const UserHome = () => {
             </Card.Body>
           </Card>
         </Col>
-        <Col md={6}>
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">Personal Trainer</h5>
-            </Card.Header>
-            <Card.Body>
-              {stats.hasTrainer ? (
-                <p className="text-success"><i className="bi bi-check-circle"></i> Assigned to Trainer</p>
-              ) : (
-                <p className="text-muted">No trainer assigned yet</p>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6}>
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">Workout Plan</h5>
-            </Card.Header>
-            <Card.Body>
-              {stats.hasWorkout ? (
-                <div>
-                  <p className="text-success"><i className="bi bi-check-circle"></i> Active Workout Plan</p>
-                  <Button variant="outline-primary" size="sm" onClick={() => navigate('/user/workouts')}>View Details</Button>
-                </div>
-              ) : (
-                <p className="text-muted">No workout plan assigned</p>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6}>
-          <Card>
-            <Card.Header>
-              <h5 className="mb-0">Diet Plan</h5>
-            </Card.Header>
-            <Card.Body>
-              {stats.hasDiet ? (
-                <div>
-                  <p className="text-success"><i className="bi bi-check-circle"></i> Active Diet Plan</p>
-                  <Button variant="outline-success" size="sm" onClick={() => navigate('/user/diet')}>View Details</Button>
-                </div>
-              ) : (
-                <p className="text-muted">No diet plan assigned</p>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={6}>
-          <Card>
+        <Col md={6} className="mb-3">
+          <Card className="h-100">
             <Card.Header>
               <h5 className="mb-0">Personal Trainer</h5>
             </Card.Header>
@@ -190,6 +189,61 @@ const UserHome = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Testimonials Section */}
+      <Row className="mt-4">
+        <Col md={6} className="mb-3">
+          <Card>
+            <Card.Header>
+              <h5 className="mb-0">My Testimonials</h5>
+            </Card.Header>
+            <Card.Body>
+              {myTestimonials.length > 0 ? (
+                myTestimonials.map(testimonial => (
+                  <Card key={testimonial._id} className="mb-3 border-0 shadow-sm">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                          {[...Array(testimonial.rating)].map((_, i) => (
+                            <i key={i} className="bi bi-star-fill text-warning"></i>
+                          ))}
+                        </div>
+                        <span className={`badge bg-${testimonial.isApproved ? 'success' : 'warning'}`}>
+                          {testimonial.isApproved ? 'Approved' : 'Pending Approval'}
+                        </span>
+                      </div>
+                      <p className="mb-0">"{testimonial.feedback}"</p>
+                      <small className="text-muted">Submitted on {new Date(testimonial.createdAt).toLocaleDateString()}</small>
+                    </Card.Body>
+                  </Card>
+                ))
+              ) : (
+                <p className="text-muted">You haven't submitted any testimonials yet.</p>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={6} className="mb-3">
+          {myTestimonials.some(t => !t.isApproved) ? (
+            <Card className="h-100 border-0 shadow-sm bg-light">
+              <Card.Body className="d-flex flex-column justify-content-center align-items-center text-center">
+                <i className="bi bi-hourglass-split display-4 text-warning mb-3"></i>
+                <h5>Pending Approval</h5>
+                <p className="text-muted">
+                  Your testimonial is currently being reviewed by our team.
+                  Once approved, it will be displayed on our landing page.
+                </p>
+                <p className="small text-muted mb-0">
+                  You can submit a new testimonial after this one is processed.
+                </p>
+              </Card.Body>
+            </Card>
+          ) : (
+            <TestimonialForm onSubmitSuccess={loadMyTestimonials} />
+          )}
+        </Col>
+      </Row>
+
       {/* Video Call Modal */}
       <VideoCall
         show={videoCall.show}

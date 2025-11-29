@@ -23,7 +23,7 @@ const attachUserFromToken = async (req, res, next) => {
             return next()
         }
 
-        req.user = { id: payload.id, role: payload.role }
+        req.user = { id: payload.id, email: payload.email, name: payload.name, role: payload.role }
         return next()
     } catch (err) {
         return next()

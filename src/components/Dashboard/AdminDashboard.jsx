@@ -8,6 +8,7 @@ import MembershipPlans from '../Admin/MembershipPlans'
 import TrainersManagement from '../Admin/TrainersManagement'
 import PaymentsManagement from '../Admin/PaymentsManagement'
 import DashboardHome from '../Admin/DashboardHome'
+import TestimonialApproval from '../Admin/TestimonialApproval'
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth()
@@ -23,15 +24,15 @@ const AdminDashboard = () => {
 
   return (
     <div>
-      <Navbar 
-        expand="lg" 
+      <Navbar
+        expand="lg"
         className="navbar"
         expanded={expanded}
         onToggle={setExpanded}
       >
         <Container fluid>
           <Navbar.Brand><i className="bi bi-dumbbell"></i> Gym Admin</Navbar.Brand>
-          <Navbar.Toggle 
+          <Navbar.Toggle
             aria-controls="basic-navbar-nav"
             aria-label="Toggle navigation"
             className="hamburger-toggle"
@@ -57,6 +58,9 @@ const AdminDashboard = () => {
               <Nav.Link active={activeTab === 'payments'} onClick={() => { setActiveTab('payments'); navigate('/admin/payments'); setExpanded(false) }}>
                 <i className="bi bi-credit-card"></i> <span>Payments</span>
               </Nav.Link>
+              <Nav.Link active={activeTab === 'testimonials'} onClick={() => { setActiveTab('testimonials'); navigate('/admin/testimonials'); setExpanded(false) }}>
+                <i className="bi bi-chat-quote"></i> <span>Testimonials</span>
+              </Nav.Link>
             </Nav>
             <Nav className="mobile-nav-buttons">
               <Navbar.Text className="me-3 mobile-welcome">Welcome, {user?.name}</Navbar.Text>
@@ -74,6 +78,7 @@ const AdminDashboard = () => {
           <Route path="/plans" element={<MembershipPlans />} />
           <Route path="/trainers" element={<TrainersManagement />} />
           <Route path="/payments" element={<PaymentsManagement />} />
+          <Route path="/testimonials" element={<TestimonialApproval />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
       </Container>

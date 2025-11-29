@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema({
     specialization: String,
     experience: String,
     token: String,
+    streak: { type: Number, default: 0 },
+    lastLogin: { type: Date },
+    points: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now }
 });
 

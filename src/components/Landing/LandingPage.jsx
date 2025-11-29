@@ -6,12 +6,16 @@ import ProgramsSection from './ProgramsSection'
 import TestimonialsSection from './TestimonialsSection'
 import Footer from './Footer'
 import Chatbot from '../Chatbot/Chatbot'
+import DailyWellnessSection from './DailyWellnessSection'
+import MinimalFitnessSection from './MinimalFitnessSection'
 
 const LandingPage = () => {
   return (
     <div className="landing-page">
       <Header />
       <HeroSlider />
+      <DailyWellnessSection />
+      <MinimalFitnessSection />
       <StatsSection />
       <ProgramsSection />
       <TestimonialsSection />
