@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const userSchema = new mongoose.Schema({
+const userSchema = genericSchema({
   email: { type: String, unique: true },
   password: String,
   name: String,
@@ -11,6 +11,10 @@ const userSchema = new mongoose.Schema({
   height: Number,
   specialization: String,
   experience: String,
+  token: String,
+  lastLogin: Date,
+  streak: { type: Number, default: 0 },
+  points: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 })
 
@@ -124,7 +128,6 @@ const Testimonial = mongoose.model('Testimonial', testimonialSchema)
 const seedInitialData = async () => {
   try {
     const usersCount = await User.countDocuments()
-    console.log('Users count:', usersCount)
     // Ensure specific admin user exists
     const specificUser = await User.findOne({ email: 'yogesh@gym.com' })
     if (!specificUser) {

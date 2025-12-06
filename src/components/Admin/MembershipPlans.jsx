@@ -101,7 +101,7 @@ const MembershipPlans = () => {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Price ($)</th>
+                <th>Price (&#8377;)</th>
                 <th>Duration (days)</th>
                 <th>Features</th>
                 <th>Actions</th>
@@ -111,7 +111,7 @@ const MembershipPlans = () => {
               {plans.map(plan => (
                 <tr key={plan.id}>
                   <td><strong>{plan.name}</strong></td>
-                  <td>${plan.price}</td>
+                  <td>&#8377;{plan.price}</td>
                   <td>{plan.duration} days</td>
                   <td>
                     {Array.isArray(plan.features) ? plan.features.map((f, i) => (
